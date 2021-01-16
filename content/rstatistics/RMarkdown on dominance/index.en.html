@@ -1,0 +1,364 @@
+---
+title: "The relationship between physical & social dominance"
+author: "Matthew Waddington"
+date: '2019-08-19T21:13:14-05:00'
+tags:
+- R Markdown
+- PCA
+- Bayesian Analysis
+categories: R
+---
+
+
+
+<p>During a summer internship, I collected data for an experiment investigating the relationship between physical and social dominance under the topic of intrasexual competition.</p>
+<p>This was the first RMarkdown I’d produced. It goes through the data analysis process to test this hypothesis.</p>
+<div id="loading-packages" class="section level2">
+<h2>Loading packages</h2>
+<pre class="r"><code>library(tidyverse)
+library(psych)
+library(lme4)
+library(lmerTest)
+library(pacman)
+library(BayesFactor)</code></pre>
+<p>Firstly, here is a quick overview of each package. <code>tidyverse</code> is used for <code>ggplot2</code> and reads in our data. The <code>psych</code> package is used for our correlation analyses and reliability testing. Both <code>lme4</code> and <code>lmerTest</code> produce the linear model. For principle compenetns analysis and Bayesian analysis, <code>pacman</code> and <code>BayesFactor</code> are needed, respectively.</p>
+</div>
+<div id="importing-data" class="section level2">
+<h2>Importing data</h2>
+<pre class="r"><code>sizing_data &lt;- read_rds(&quot;sizing_up_measurement_data.rds&quot;)</code></pre>
+<p>Before going through the experiment, we read in the dataset and assign (<code>&lt;-</code>) the experiment to a named object.</p>
+</div>
+<div id="data-wrangling" class="section level2">
+<h2>Data wrangling</h2>
+<div id="checking-the-data" class="section level3">
+<h3>Checking the data</h3>
+<pre class="r"><code>head(sizing_data)</code></pre>
+<pre><code>## # A tibble: 6 x 18
+##   ppt_index ppt_height_cm ppt_bicep_circu… ppt_grip1st_mea… ppt_grip2nd_mea…
+##       &lt;int&gt;         &lt;dbl&gt;            &lt;dbl&gt;            &lt;dbl&gt;            &lt;dbl&gt;
+## 1         2           170             34                 50               54
+## 2         3           174             25                 30               23
+## 3         4           178             32                 41               42
+## 4         5           178             35.5               39               39
+## 5         6           182             31                 54               58
+## 6         7           172             30.5               54               54
+## # … with 13 more variables: ppt_grip3rd_measurement &lt;dbl&gt;, ppt_age &lt;dbl&gt;,
+## #   surpass &lt;dbl&gt;, explanation &lt;dbl&gt;, impose_will &lt;dbl&gt;, correct_others &lt;dbl&gt;,
+## #   outdo_others &lt;dbl&gt;, control_conversation &lt;dbl&gt;, criticise &lt;dbl&gt;,
+## #   challenge_pov &lt;dbl&gt;, lay_law &lt;dbl&gt;, hate_pushy &lt;dbl&gt;, pressure_others &lt;dbl&gt;</code></pre>
+<p>The <code>head()</code> function shows us the first 6 rows and 18 columns (with 13 omitted due to space) in a 6x18 tibble.</p>
+<pre class="r"><code>MeanGrip &lt;- rowMeans(subset(sizing_data, select = c(ppt_grip1st_measurement, ppt_grip2nd_measurement, ppt_grip3rd_measurement)), na.rm=T)
+
+sizing1 &lt;- cbind(sizing_data, MeanGrip)
+
+MeanDominance &lt;- rowMeans(subset(sizing_data, select = c(surpass:pressure_others)), na.rm=T) 
+
+sizing_2 &lt;- cbind(sizing1, MeanDominance) </code></pre>
+<p>Firstly, the three grip strength measurements need to be averaged using <code>rowMeans()</code>, specifying the dataset and selecting the necessary columns. This mean column (MeanGrip) is then binded to the original dataset using <code>cbind</code>.</p>
+<p>Next, a mean score for each participant is created for the items in the social dominance scale questionnaire. Again, this (MeanDominance) is binded to the dataset.</p>
+</div>
+<div id="checking-data-with-histograms-and-correlations" class="section level3">
+<h3>Checking data with histograms and correlations</h3>
+<pre class="r"><code>ggplot(data=sizing_2) +
+  geom_histogram(mapping = aes(x = MeanDominance), 
+                 breaks = seq(1, 7, 0.5), na.rm=T) </code></pre>
+<p><img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<pre class="r"><code>ggplot(data=sizing_2) +
+  geom_histogram(mapping = aes(x = ppt_age), na.rm = T) </code></pre>
+<p><img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-5-2.png" width="672" /></p>
+<p>Here, the data can be checked with the histogram to see if mean dominance on the questionnaire is normally distributed and helps identify any outliers. The second histogram shows that the age range and density amongst these 105 participants is high. This is beneficial as it enables us to make interpretations on all age groups as opposed to a limited age sample (as is often the case with psychology studies).</p>
+<pre class="r"><code>ggplot(data = sizing_2, mapping = aes(x = MeanGrip, 
+          y = ppt_bicep_circumference_cm), na.rm = T) +
+  geom_point() +
+  geom_smooth(method = &quot;lm&quot;) </code></pre>
+<p><img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<pre class="r"><code>cor.test(sizing_2$MeanGrip, sizing_2$ppt_bicep_circumference_cm)</code></pre>
+<pre><code>## 
+##  Pearson&#39;s product-moment correlation
+## 
+## data:  sizing_2$MeanGrip and sizing_2$ppt_bicep_circumference_cm
+## t = 4.993, df = 103, p-value = 2.432e-06
+## alternative hypothesis: true correlation is not equal to 0
+## 95 percent confidence interval:
+##  0.2728622 0.5837184
+## sample estimates:
+##       cor 
+## 0.4414409</code></pre>
+<p>The Pearson’s r correlation between grip strength and bicep circumference is nothing more than a sanity check. As it would be expected that these two variables are related, our data supports that (r = .44, 95% CI = [.27, .58], p &lt; .001). This partially confirms that the data has been correctly input.</p>
+</div>
+<div id="calculating-cronbachs-alpha" class="section level3">
+<h3>Calculating Cronbach’s Alpha</h3>
+<p>Cronbach’s Alpha (CA) is used to assess the internal consistency of items. In this case, to assess whether each item within the social dominance scale is inter-correlated with the other items. CA levels of 0.7 are considered acceptable.</p>
+<pre class="r"><code>SocDomScale &lt;- data.frame(sizing_data[,8:18])
+
+alpha(SocDomScale)</code></pre>
+<pre><code>## 
+## Reliability analysis   
+## Call: alpha(x = SocDomScale)
+## 
+##   raw_alpha std.alpha G6(smc) average_r S/N   ase mean  sd median_r
+##       0.82      0.81    0.84      0.28 4.4 0.026    4 0.9     0.29
+## 
+##  lower alpha upper     95% confidence boundaries
+## 0.76 0.82 0.87 
+## 
+##  Reliability if an item is dropped:
+##                      raw_alpha std.alpha G6(smc) average_r S/N alpha se var.r
+## surpass                   0.81      0.80    0.83      0.29 4.1    0.028 0.022
+## explanation               0.79      0.79    0.82      0.27 3.7    0.030 0.024
+## impose_will               0.78      0.78    0.81      0.26 3.6    0.031 0.023
+## correct_others            0.81      0.80    0.83      0.29 4.1    0.028 0.022
+## outdo_others              0.80      0.80    0.82      0.29 4.0    0.028 0.021
+## control_conversation      0.80      0.80    0.82      0.28 3.9    0.029 0.025
+## criticise                 0.80      0.80    0.82      0.29 4.0    0.028 0.025
+## challenge_pov             0.81      0.81    0.83      0.29 4.1    0.027 0.024
+## lay_law                   0.79      0.79    0.82      0.27 3.8    0.030 0.024
+## hate_pushy                0.83      0.83    0.85      0.33 4.9    0.024 0.013
+## pressure_others           0.78      0.78    0.81      0.26 3.6    0.031 0.023
+##                      med.r
+## surpass               0.30
+## explanation           0.28
+## impose_will           0.29
+## correct_others        0.29
+## outdo_others          0.29
+## control_conversation  0.29
+## criticise             0.30
+## challenge_pov         0.31
+## lay_law               0.29
+## hate_pushy            0.31
+## pressure_others       0.28
+## 
+##  Item statistics 
+##                        n raw.r std.r r.cor r.drop mean  sd
+## surpass              104  0.55  0.55  0.50   0.43  4.5 1.5
+## explanation          104  0.68  0.67  0.63   0.58  4.6 1.6
+## impose_will          104  0.75  0.74  0.73   0.66  3.5 1.6
+## correct_others       104  0.55  0.55  0.49   0.43  4.4 1.6
+## outdo_others         104  0.59  0.58  0.55   0.47  4.0 1.6
+## control_conversation 104  0.62  0.63  0.57   0.52  3.4 1.5
+## criticise            104  0.56  0.57  0.52   0.45  5.1 1.4
+## challenge_pov        104  0.52  0.53  0.47   0.41  5.2 1.4
+## lay_law              104  0.66  0.66  0.61   0.56  3.2 1.5
+## hate_pushy           104  0.28  0.28  0.18   0.13  3.0 1.5
+## pressure_others      104  0.74  0.74  0.72   0.65  2.9 1.5
+## 
+## Non missing response frequency for each item
+##                         1    2    3    4    5    6    7 miss
+## surpass              0.03 0.10 0.14 0.15 0.31 0.20 0.07 0.01
+## explanation          0.02 0.13 0.13 0.08 0.30 0.27 0.07 0.01
+## impose_will          0.13 0.21 0.15 0.13 0.27 0.09 0.01 0.01
+## correct_others       0.04 0.12 0.14 0.12 0.31 0.23 0.04 0.01
+## outdo_others         0.03 0.21 0.12 0.19 0.26 0.13 0.05 0.01
+## control_conversation 0.10 0.23 0.19 0.19 0.21 0.06 0.02 0.01
+## criticise            0.00 0.06 0.11 0.11 0.29 0.29 0.15 0.01
+## challenge_pov        0.01 0.05 0.05 0.13 0.29 0.30 0.17 0.01
+## lay_law              0.10 0.32 0.15 0.21 0.14 0.08 0.00 0.01
+## hate_pushy           0.10 0.39 0.18 0.17 0.06 0.09 0.01 0.01
+## pressure_others      0.18 0.30 0.21 0.13 0.12 0.03 0.02 0.01</code></pre>
+<p>As we can see, the “raw_alpha” level in our data is 0.82 which indicates high multicollinearity (highly inter-correlated). By observing the raw_alpha in the “reliability if item is dropped” columns, we can see that the “hate_pushy” item omission would improve the CA to 0.83. So perhaps, removal of this item would help create a better construct.</p>
+<pre class="r"><code>SocDomScale2 &lt;- select(SocDomScale, -hate_pushy) </code></pre>
+<p>Therefore, we remove this item using the minus sign and reassign the new data frame.</p>
+<pre class="r"><code>MeanDominance2 &lt;- rowMeans(subset(sizing_data, select = c(8:16, 18)), na.rm = T) 
+
+sizing_3 &lt;- cbind(sizing_2, MeanDominance2) </code></pre>
+<p>Further analysis will use “MeanDominance2” as this omits the item (17) which lowered the CA.</p>
+</div>
+</div>
+<div id="linear-model" class="section level2">
+<h2>Linear Model</h2>
+<p>Here, we use regression analysis to determine whether social dominance does relate to physical dominance measures.</p>
+<pre class="r"><code>dom_lmodel &lt;- lm(MeanDominance2 ~ ppt_height_cm + ppt_bicep_circumference_cm +
+              MeanGrip, data = sizing_3)
+
+summary(dom_lmodel) </code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = MeanDominance2 ~ ppt_height_cm + ppt_bicep_circumference_cm + 
+##     MeanGrip, data = sizing_3)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -2.11161 -0.54629 -0.03562  0.59032  2.45827 
+## 
+## Coefficients:
+##                            Estimate Std. Error t value Pr(&gt;|t|)
+## (Intercept)                 1.11455    2.62886   0.424    0.673
+## ppt_height_cm               0.01590    0.01439   1.105    0.272
+## ppt_bicep_circumference_cm -0.01034    0.03126  -0.331    0.741
+## MeanGrip                    0.01132    0.01215   0.932    0.353
+## 
+## Residual standard error: 0.9523 on 100 degrees of freedom
+##   (1 observation deleted due to missingness)
+## Multiple R-squared:  0.03558,    Adjusted R-squared:  0.006651 
+## F-statistic:  1.23 on 3 and 100 DF,  p-value: 0.3029</code></pre>
+<p>Since none of the variables are significant, we have no evidence to support the relationship.</p>
+</div>
+<div id="principle-components-analysis-pca" class="section level2">
+<h2>Principle Components Analysis (PCA)</h2>
+<p>PCA is an unsupervised approach to classify data into clusters. We use it below for the dominance scale, social dominance measure and physical measures.</p>
+<div id="pca-for-dominance-scale" class="section level3">
+<h3>PCA for Dominance Scale</h3>
+<pre class="r"><code>SocDomScale3 &lt;- SocDomScale2 %&gt;% 
+                  drop_na()
+
+SocDomPCA &lt;- prcomp(SocDomScale3, center = T, # centres mean to 0
+             scale = T) # sets SD unit variance
+
+summary(SocDomPCA) </code></pre>
+<pre><code>## Importance of components:
+##                          PC1    PC2    PC3     PC4     PC5     PC6     PC7
+## Standard deviation     2.003 1.1526 1.0010 0.86502 0.78731 0.76477 0.75891
+## Proportion of Variance 0.401 0.1328 0.1002 0.07483 0.06199 0.05849 0.05759
+## Cumulative Proportion  0.401 0.5339 0.6341 0.70892 0.77090 0.82939 0.88698
+##                            PC8     PC9    PC10
+## Standard deviation     0.66662 0.59449 0.57649
+## Proportion of Variance 0.04444 0.03534 0.03323
+## Cumulative Proportion  0.93142 0.96677 1.00000</code></pre>
+<p>To do the PCA, we firstly remove any NA values. In the <code>pacman</code> package, the <code>prcomp()</code> function creates the PCA and we centre and scale this so that the mean is equal to zero and the variance is based on SD units.</p>
+<p>The <code>summary()</code> shows us in the proportion of variance row that PC1 accounts for 40% of the variance in the data, PC2 accounts for 13%, PC3 10% and so on… Within this data, there are 10 principle components which explain almost all of the variance in our data.</p>
+<p>We can plot this in a graph.</p>
+<pre class="r"><code>plot(SocDomPCA)    </code></pre>
+<p><img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<pre class="r"><code>head(predict(SocDomPCA)) %&gt;% 
+  round(2) </code></pre>
+<pre><code>##        PC1   PC2   PC3   PC4   PC5   PC6   PC7  PC8   PC9  PC10
+## [1,] -0.20 -0.37  1.00  1.13 -1.97  0.63 -0.81 0.23 -0.30 -1.31
+## [2,]  0.31  1.53  0.91  0.79 -0.13 -0.34  0.43 1.01  0.06  1.35
+## [3,]  0.57  0.64 -0.15  0.47  0.82  0.51  0.37 0.33  0.62  0.23
+## [4,]  2.75  0.43 -1.01 -0.12  0.66  0.76  0.39 0.11  0.21 -1.55
+## [5,]  0.17  1.21  0.56  1.05 -0.71  1.10 -0.39 1.57  0.66  0.83
+## [6,] -1.94 -0.22 -0.66 -0.02  0.45  0.11 -0.63 0.63  0.07  0.11</code></pre>
+<pre class="r"><code>Phy.Size &lt;- predict(SocDomPCA)[,1] 
+
+head(Phy.Size)</code></pre>
+<pre><code>## [1] -0.2018133  0.3095664  0.5746795  2.7483128  0.1652833 -1.9366543</code></pre>
+<p>Using <code>predict()</code> we can see how each participant fits each PC (for the first 6 rows).</p>
+<p>We may suggest that PC1 is accounting for physical size. This interpretation may well be wrong and there may be a better categorical fit. Social dominance is a broad construct so we would expect that there are components which do not fit the expectations. Physical size is just an example of one component which could plausibly contribute to 37% of the explained variance in the data.</p>
+</div>
+<div id="pca-for-social-dominance-measure" class="section level3">
+<h3>PCA for Social Dominance Measure</h3>
+<pre class="r"><code>cor(SocDomScale3, Phy.Size) </code></pre>
+<pre><code>##                            [,1]
+## surpass              -0.5616213
+## explanation          -0.6995967
+## impose_will          -0.7319217
+## correct_others       -0.5783625
+## outdo_others         -0.6101478
+## control_conversation -0.6292140
+## criticise            -0.5430922
+## challenge_pov        -0.5116329
+## lay_law              -0.6772756
+## pressure_others      -0.7428043</code></pre>
+<p>The relation between physical size (“Phy.Size”) and laying the law upon others (“lay_law”) is r = -0.68 (a strong negative correlation). This indicates that the higher someone’s masculinity, the less inclined a particular individual is to lay the law on others. It is not intuitive that masculinity is negatively related to laying the law on others. So, as we mentioned earlier, there may be a better definition for PC1.</p>
+</div>
+<div id="pca-for-physical-dominance-measures" class="section level3">
+<h3>PCA for Physical Dominance Measures</h3>
+<pre class="r"><code>sizing_4 &lt;- sizing_3[-c(40), ] 
+
+cor(sizing_4$MeanGrip, Phy.Size)</code></pre>
+<pre><code>## [1] -0.1420139</code></pre>
+<pre class="r"><code>cor(sizing_4$ppt_bicep_circumference_cm, Phy.Size)</code></pre>
+<pre><code>## [1] -0.01952728</code></pre>
+<pre class="r"><code>cor(sizing_4$ppt_height_cm, Phy.Size)</code></pre>
+<pre><code>## [1] -0.166141</code></pre>
+<p>Participant 40 had some missing physical measurements so were excluded from the dataset.</p>
+<p>From looking at the correlations with physical measures, it seems that labelling PC1 as physical size may not have been the most appropriate choice. This is because the physical measures correlate weakly (r = -.17 to -.02) with physical size (PC1).</p>
+</div>
+<div id="correlation-output-relationship-between-physical-and-social-measures" class="section level3">
+<h3>Correlation Output: Relationship between Physical and Social Measures</h3>
+<pre class="r"><code>cor.test(sizing_4$MeanGrip, sizing_4$MeanDominance2)</code></pre>
+<pre><code>## 
+##  Pearson&#39;s product-moment correlation
+## 
+## data:  sizing_4$MeanGrip and sizing_4$MeanDominance2
+## t = 1.4874, df = 102, p-value = 0.14
+## alternative hypothesis: true correlation is not equal to 0
+## 95 percent confidence interval:
+##  -0.04824384  0.32905318
+## sample estimates:
+##       cor 
+## 0.1456981</code></pre>
+<pre class="r"><code>cor.test(sizing_4$ppt_height_cm, sizing_4$MeanDominance2)</code></pre>
+<pre><code>## 
+##  Pearson&#39;s product-moment correlation
+## 
+## data:  sizing_4$ppt_height_cm and sizing_4$MeanDominance2
+## t = 1.684, df = 102, p-value = 0.09523
+## alternative hypothesis: true correlation is not equal to 0
+## 95 percent confidence interval:
+##  -0.02903306  0.34610000
+## sample estimates:
+##       cor 
+## 0.1644748</code></pre>
+<pre class="r"><code>cor.test(sizing_4$ppt_bicep_circumference_cm, sizing_4$MeanDominance2)</code></pre>
+<pre><code>## 
+##  Pearson&#39;s product-moment correlation
+## 
+## data:  sizing_4$ppt_bicep_circumference_cm and sizing_4$MeanDominance2
+## t = 0.20863, df = 102, p-value = 0.8352
+## alternative hypothesis: true correlation is not equal to 0
+## 95 percent confidence interval:
+##  -0.1726219  0.2123963
+## sample estimates:
+##        cor 
+## 0.02065291</code></pre>
+<pre class="r"><code>cor.test(sizing_4$ppt_age, sizing_4$MeanDominance2)</code></pre>
+<pre><code>## 
+##  Pearson&#39;s product-moment correlation
+## 
+## data:  sizing_4$ppt_age and sizing_4$MeanDominance2
+## t = -1.279, df = 101, p-value = 0.2038
+## alternative hypothesis: true correlation is not equal to 0
+## 95 percent confidence interval:
+##  -0.31214309  0.06896505
+## sample estimates:
+##        cor 
+## -0.1262445</code></pre>
+<p>We can see that none of the physical dominance predictors significantly relate to social dominance. However, this may not necessarily indicate that there is no effect; it may be that only a small effect is apparent and a larger sample is required to detect the relationship. Disregarding p &gt; .05 for a moment, it seems as if height and hand grip strength may be weakly related to social dominance and age negatively related to social dominance.</p>
+</div>
+</div>
+<div id="bayesian-analysis-bayes-factor" class="section level2">
+<h2>Bayesian Analysis: Bayes Factor</h2>
+<pre class="r"><code>correlationBF(sizing_4$MeanDominance2, sizing_4$ppt_height_cm, rscale = 1/10)</code></pre>
+<pre><code>## Bayes factor analysis
+## --------------
+## [1] Alt., r=0.1 : 1.289217 ±0%
+## 
+## Against denominator:
+##   Null, rho = 0 
+## ---
+## Bayes factor type: BFcorrelation, Jeffreys-beta*</code></pre>
+<pre class="r"><code>correlationBF(sizing_4$MeanDominance2, sizing_4$ppt_bicep_circumference_cm, rscale=1/15)</code></pre>
+<pre><code>## Bayes factor analysis
+## --------------
+## [1] Alt., r=0.067 : 0.4799182 ±0%
+## 
+## Against denominator:
+##   Null, rho = 0 
+## ---
+## Bayes factor type: BFcorrelation, Jeffreys-beta*</code></pre>
+<pre class="r"><code>correlationBF(sizing_4$MeanDominance2, sizing_4$ppt_age, rscale=1/10)</code></pre>
+<pre><code>## Bayes factor analysis
+## --------------
+## [1] Alt., r=0.1 : 0.7903576 ±0%
+## 
+## Against denominator:
+##   Null, rho = 0 
+## ---
+## Bayes factor type: BFcorrelation, Jeffreys-beta*</code></pre>
+<pre class="r"><code>correlationBF(sizing_4$MeanDominance2, sizing_4$MeanGrip, rscale=1/10)  </code></pre>
+<pre><code>## Bayes factor analysis
+## --------------
+## [1] Alt., r=0.1 : 0.9989057 ±0%
+## 
+## Against denominator:
+##   Null, rho = 0 
+## ---
+## Bayes factor type: BFcorrelation, Jeffreys-beta*</code></pre>
+<p>After considering our prior evidence from our correlational tests, an rscale of 1/10 for age, grip, and height seems reasonable as the 95% CI did not exceed ±0.5 (only used as a heuristic, not a rule). For bicep circumference, the 95% CI was lower, so an r-scale of 1/15 is better.</p>
+<p>The BF analysis revealed that only height had a BF which was more likely in favour of our hypothesis than the null hypothesis (BF = 1.29). However, this BF is still extremely low and typically a BF of 3 is considered the minimum for accepting the hypothesis over the null hypothesis. Therefore, the physical measurements based on Bayesian analysis do not seem to be related to perceived social dominance.</p>
+</div>
+<div id="final-comments" class="section level2">
+<h2>Final comments</h2>
+<p>These analysis suggest that our data has failed to find a relationship between physical and social dominance. This relationship has been assessed through Pearson’s r, linear regression, and Bayes Factor analysis; whilst the reliability was tested using Cronbach’s Alpha.</p>
+</div>
