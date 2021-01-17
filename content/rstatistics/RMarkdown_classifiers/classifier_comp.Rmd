@@ -283,8 +283,13 @@ cm
 
 Under naive bayes, the model has an accuracy of **86%**. 
 
+### Visualising the training set results
+
+![Test set](NaiveBayesTrainSet.png)
+
 ### Visualising the test set results
 
+![Test set](NaiveBayesTestSet.png)
 
 We can see that naive bayes correctly classifies most of the test set data points but misses some points which seem to be higher in age and estimated salary. Nevertheless, no model is perfect and 86% accuracy is relatively high.
 
