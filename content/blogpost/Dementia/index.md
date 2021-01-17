@@ -13,7 +13,7 @@ image:
 lastmod: "2021-01-16T00:00:00Z"
 projects: []
 subtitle: ""
-summary: "In this post, I shed light on the different diseases within dementia and the challenges this presents to clinicians and researchers."
+summary: "In this post, I shed light on the different diseases within dementia and the challengeshello this presents to clinicians and researchers."
 tags:
 title: The many faces of dementia
 ---
