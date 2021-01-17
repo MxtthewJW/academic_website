@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  
+  <url>
+    <loc>/courses/example/example1/</loc>
+    <lastmod>2019-05-05T00:00:00+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/courses/example/</loc>
+    <lastmod>2018-09-09T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/courses/example/example2/</loc>
+    <lastmod>2019-05-05T00:00:00+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/talk/example-talk/</loc>
+    <lastmod>2030-06-01T13:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/</loc>
+    <lastmod>2030-06-01T13:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/event/</loc>
+    <lastmod>2030-06-01T13:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/publication-type/2/</loc>
+    <lastmod>2020-07-01T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/authors/</loc>
+    <lastmod>2021-01-16T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/author/matthew-waddington/</loc>
+    <lastmod>2021-01-16T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/publication_types/</loc>
+    <lastmod>2020-07-01T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/publication/</loc>
+    <lastmod>2020-07-01T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/author/thomas-richardson/</loc>
+    <lastmod>2020-07-01T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/author/tucker-gilman/</loc>
+    <lastmod>2020-07-01T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/publication/journal-article/</loc>
+    <lastmod>2020-07-01T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/essay/</loc>
+    <lastmod>2020-03-11T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/essay/therapeutic-alliance/</loc>
+    <lastmod>2020-03-02T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/tag/bayesian-analysis/</loc>
+    <lastmod>2019-08-19T21:13:14-05:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/categories/</loc>
+    <lastmod>2019-08-19T21:13:14-05:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/tag/pca/</loc>
+    <lastmod>2019-08-19T21:13:14-05:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/category/r/</loc>
+    <lastmod>2019-08-19T21:13:14-05:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/tag/r-markdown/</loc>
+    <lastmod>2019-08-19T21:13:14-05:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/rstatistics/</loc>
+    <lastmod>2019-08-19T21:13:14-05:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/tags/</loc>
+    <lastmod>2019-08-19T21:13:14-05:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/rstatistics/rmarkdown-on-dominance/</loc>
+    <lastmod>2019-08-19T21:13:14-05:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/courses/</loc>
+    <lastmod>2019-05-05T00:00:00+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/blogpost/</loc>
+    <lastmod>2021-01-16T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/blogpost/dementia/</loc>
+    <lastmod>2021-01-16T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/essay/ad-essay/</loc>
+    <lastmod>2020-03-11T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/author/%E5%90%B3%E6%81%A9%E9%81%94/</loc>
+  </url>
+  
+</urlset>
