@@ -8,6 +8,12 @@ tags:
 - Kernal SVM
 - Naive Bayes
 categories: R
+image:
+  placement: 1
+  caption: "Photo by [Security Round Table](https://www.securityroundtable.org/the-growing-role-of-machine-learning-in-cybersecurity/)"
+  focal_point: "Center"
+  preview_only: false
+  alt_text: 
 ---
 
 In this R Markdown, I go through three of the classification methods I learnt on a machine learning Udemy course. These classifiers include logistic regression, kernal support vector machine, and naive bayes. Each of these will be compared to see which one best classifies the dataset.
