@@ -1,0 +1,214 @@
+---
+title: "The relationship between physical & social dominance"
+author: "Matthew Waddington"
+date: '2019-08-19T21:13:14-05:00'
+tags:
+- R Markdown
+- PCA
+- Bayesian Analysis
+categories: R
+---
+
+During a summer internship, I collected data for an experiment investigating the relationship between physical and social dominance under the topic of intrasexual competition. 
+
+This was the first RMarkdown I'd produced. It goes through the data analysis process to test this hypothesis.
+
+## Loading packages
+
+```{r echo=T, results='hide', message=F, warning=F}
+library(tidyverse)
+library(psych)
+library(lme4)
+library(lmerTest)
+library(pacman)
+library(BayesFactor)
+```
+
+Firstly, here is a quick overview of each package. `tidyverse` is used for `ggplot2` and reads in our data. The `psych` package is used for our correlation analyses and reliability testing. Both `lme4` and `lmerTest` produce the linear model. For principle compenetns analysis and Bayesian analysis, `pacman` and `BayesFactor` are needed, respectively. 
+
+## Importing data
+
+```{r message=F, warning=F}
+sizing_data <- read_rds("sizing_up_measurement_data.rds")
+```
+
+Before going through the experiment, we read in the dataset and assign (`<-`) the experiment to a named object.
+
+## Data wrangling
+
+### Checking the data
+
+```{r message=F, warning=F}
+head(sizing_data)
+```
+
+The `head()` function shows us the first 6 rows and 18 columns (with 13 omitted due to space) in a 6x18 tibble.
+
+```{r message=F, warning=F}
+MeanGrip <- rowMeans(subset(sizing_data, select = c(ppt_grip1st_measurement, ppt_grip2nd_measurement, ppt_grip3rd_measurement)), na.rm=T)
+
+sizing1 <- cbind(sizing_data, MeanGrip)
+
+MeanDominance <- rowMeans(subset(sizing_data, select = c(surpass:pressure_others)), na.rm=T) 
+
+sizing_2 <- cbind(sizing1, MeanDominance) 
+
+```
+
+Firstly, the three grip strength measurements need to be averaged using `rowMeans()`, specifying the dataset and selecting the necessary columns. This mean column (MeanGrip) is then binded to the original dataset using `cbind`. 
+
+Next, a mean score for each participant is created for the items in the social dominance scale questionnaire. Again, this (MeanDominance) is binded to the dataset.
+
+### Checking data with histograms and correlations
+
+```{r message=F, warning=F}
+ggplot(data=sizing_2) +
+  geom_histogram(mapping = aes(x = MeanDominance), 
+                 breaks = seq(1, 7, 0.5), na.rm=T) 
+
+ggplot(data=sizing_2) +
+  geom_histogram(mapping = aes(x = ppt_age), na.rm = T) 
+```
+
+Here, the data can be checked with the histogram to see if mean dominance on the questionnaire is normally distributed and helps identify any outliers. The second histogram shows that the age range and density amongst these 105 participants is high. This is beneficial as it enables us to make interpretations on all age groups as opposed to a limited age sample (as is often the case with psychology studies).
+
+```{r message=F, warning=F}
+ggplot(data = sizing_2, mapping = aes(x = MeanGrip, 
+          y = ppt_bicep_circumference_cm), na.rm = T) +
+  geom_point() +
+  geom_smooth(method = "lm") 
+
+cor.test(sizing_2$MeanGrip, sizing_2$ppt_bicep_circumference_cm)
+```
+
+The Pearson's r correlation between grip strength and bicep circumference is nothing more than a sanity check. As it would be expected that these two variables are related, our data supports that (r = .44, 95% CI = [.27, .58], p < .001). This partially confirms that the data has been correctly input.
+
+### Calculating Cronbach's Alpha
+
+Cronbach's Alpha (CA) is used to assess the internal consistency of items. In this case, to assess whether each item within the social dominance scale is inter-correlated with the other items. CA levels of 0.7 are considered acceptable.
+
+```{r message=F, warning=F}
+SocDomScale <- data.frame(sizing_data[,8:18])
+
+alpha(SocDomScale)
+```
+
+As we can see, the "raw_alpha" level in our data is 0.82 which indicates high multicollinearity (highly inter-correlated). By observing the raw_alpha in the "reliability if item is dropped" columns, we can see that the "hate_pushy" item omission would improve the CA to 0.83. So perhaps, removal of this item would help create a better construct.
+
+```{r message=F, warning=F}
+SocDomScale2 <- select(SocDomScale, -hate_pushy) 
+```
+
+Therefore, we remove this item using the minus sign and reassign the new data frame.
+
+```{r message=F, warning=F}
+MeanDominance2 <- rowMeans(subset(sizing_data, select = c(8:16, 18)), na.rm = T) 
+
+sizing_3 <- cbind(sizing_2, MeanDominance2) 
+```
+
+Further analysis will use "MeanDominance2" as this omits the item (17) which lowered the CA.
+
+## Linear Model
+
+Here, we use regression analysis to determine whether social dominance does relate to physical dominance measures.
+
+```{r message=F, warning=F}
+dom_lmodel <- lm(MeanDominance2 ~ ppt_height_cm + ppt_bicep_circumference_cm +
+              MeanGrip, data = sizing_3)
+
+summary(dom_lmodel) 
+```
+
+Since none of the variables are significant, we have no evidence to support the relationship.
+
+## Principle Components Analysis (PCA) 
+
+PCA is an unsupervised approach to classify data into clusters. We use it below for the dominance scale, social dominance measure and physical measures.
+
+### PCA for Dominance Scale
+
+```{r message=F, warning=F}
+SocDomScale3 <- SocDomScale2 %>% 
+                  drop_na()
+
+SocDomPCA <- prcomp(SocDomScale3, center = T, # centres mean to 0
+             scale = T) # sets SD unit variance
+
+summary(SocDomPCA) 
+```
+
+To do the PCA, we firstly remove any NA values. In the `pacman` package, the `prcomp()` function creates the PCA and we centre and scale this so that the mean is equal to zero and the variance is based on SD units.
+
+The `summary()` shows us in the proportion of variance row that PC1 accounts for 40% of the variance in the data, PC2 accounts for 13%, PC3 10% and so on... Within this data, there are 10 principle components which explain almost all of the variance in our data. 
+
+We can plot this in a graph.
+
+```{r message=F, warning=F}
+plot(SocDomPCA)    
+```
+
+
+```{r message=F, warning=F}
+head(predict(SocDomPCA)) %>% 
+  round(2) 
+
+Phy.Size <- predict(SocDomPCA)[,1] 
+
+head(Phy.Size)
+```
+
+Using `predict()` we can see how each participant fits each PC (for the first 6 rows). 
+
+We may suggest that PC1 is accounting for physical size. This interpretation may well be wrong and there may be a better categorical fit. Social dominance is a broad construct so we would expect that there are components which do not fit the expectations. Physical size is just an example of one component which could plausibly contribute to 37% of the explained variance in the data.
+
+### PCA for Social Dominance Measure
+
+```{r message=F, warning=F}
+cor(SocDomScale3, Phy.Size) 
+```
+
+The relation between physical size ("Phy.Size") and laying the law upon others ("lay_law") is r = -0.68 (a strong negative correlation). This indicates that the higher someone's masculinity, the less inclined a particular individual is to lay the law on others. It is not intuitive that masculinity is negatively related to laying the law on others. So, as we mentioned earlier, there may be a better definition for PC1. 
+
+### PCA for Physical Dominance Measures
+
+```{r message=F, warning=F}
+sizing_4 <- sizing_3[-c(40), ] 
+
+cor(sizing_4$MeanGrip, Phy.Size)
+cor(sizing_4$ppt_bicep_circumference_cm, Phy.Size)
+cor(sizing_4$ppt_height_cm, Phy.Size)
+```
+
+Participant 40 had some missing physical measurements so were excluded from the dataset.
+
+From looking at the correlations with physical measures, it seems that labelling PC1 as physical size may not have been the most appropriate choice. This is because the physical measures correlate weakly (r = -.17 to -.02) with physical size (PC1).
+
+### Correlation Output: Relationship between Physical and Social Measures
+
+```{r message=F, warning=F}
+cor.test(sizing_4$MeanGrip, sizing_4$MeanDominance2)
+cor.test(sizing_4$ppt_height_cm, sizing_4$MeanDominance2)
+cor.test(sizing_4$ppt_bicep_circumference_cm, sizing_4$MeanDominance2)
+cor.test(sizing_4$ppt_age, sizing_4$MeanDominance2)
+```
+
+We can see that none of the physical dominance predictors significantly relate to social dominance. However, this may not necessarily indicate that there is no effect; it may be that only a small effect is apparent and a larger sample is required to detect the relationship. Disregarding p > .05 for a moment, it seems as if height and hand grip strength may be weakly related to social dominance and age negatively related to social dominance. 
+
+## Bayesian Analysis: Bayes Factor
+
+```{r message=F, warning=F}
+correlationBF(sizing_4$MeanDominance2, sizing_4$ppt_height_cm, rscale = 1/10)
+correlationBF(sizing_4$MeanDominance2, sizing_4$ppt_bicep_circumference_cm, rscale=1/15)
+correlationBF(sizing_4$MeanDominance2, sizing_4$ppt_age, rscale=1/10)
+correlationBF(sizing_4$MeanDominance2, sizing_4$MeanGrip, rscale=1/10)  
+
+```
+
+After considering our prior evidence from our correlational tests, an rscale of 1/10 for age, grip, and height seems reasonable as the 95% CI did not exceed ±0.5 (only used as a heuristic, not a rule). For bicep circumference, the 95% CI was lower, so an r-scale of 1/15 is better.
+
+The BF analysis revealed that only height had a BF which was more likely in favour of our hypothesis than the null hypothesis (BF = 1.29). However, this BF is still extremely low and typically a BF of 3 is considered the minimum for accepting the hypothesis over the null hypothesis. Therefore, the physical measurements based on Bayesian analysis do not seem to be related to perceived social dominance.
+
+## Final comments
+
+These analysis suggest that our data has failed to find a relationship between physical and social dominance. This relationship has been assessed through Pearson's r, linear regression, and Bayes Factor analysis; whilst the reliability was tested using Cronbach's Alpha.
