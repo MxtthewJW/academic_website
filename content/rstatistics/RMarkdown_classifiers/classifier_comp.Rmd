@@ -1,0 +1,294 @@
+---
+title: "A comparison of three classifiers"
+author: "Matthew Waddington"
+date: '2021-01-16T21:13:14-05:00'
+output: html_document
+tags:
+- Logistic regression
+- Kernal SVM
+- Naive Bayes
+categories: R
+---
+
+In this R Markdown, I go through three of the classification methods I learnt on a machine learning Udemy course. These classifiers include logistic regression, kernal support vector machine, and naive bayes. Each of these will be compared to see which one best classifies the dataset.
+
+The dataset is information from people who have/have not decided to purchase social media advertisements. This same dataset is used throughout, so the first classifier (LR) will go through all the steps in more detail.
+
+## <centre> **Logistic regression** <centre/>
+
+Whilst other forms of regression such as multiple linear regression and polynomial regression use continuous data, logistic regressions use categorical data. This categorical data is used as a classification predictor. The prediction is based on the sigmoid function which is either 0 or 1.
+
+### Loading libraries
+
+```{r warning = F, message = F}
+library(caTools)
+library(ElemStatLearn)
+```
+
+To begin with, we load in the libraries needed for the logistic regression. `caTools` is used for splitting our data so that the model can be trained and then tested. `ElemStatLearn` is used to visualise our data.
+
+### Importing the data
+
+```{r warning = F, message = F}
+social_ads <- read.csv('Social_Network_Ads.csv')
+
+head(social_ads)
+
+social_ads <- social_ads[,3:5]
+```
+
+The data is firstly read in and assigned. Using `head()` we can see that there are 5 columns witht he values for the first 6 rows. Purchased is the column which is categorised as 0 or 1 allowing us to perform logistic regression analysis. We then update this dataset by removing columns which are not relevant (i.e., ID and Gender).
+
+### Training set and test set
+
+```{r warning = F, message = F}
+split <- sample.split(social_ads$Purchased, SplitRatio = 0.75)
+training_set <- subset(social_ads, split == TRUE)
+test_set <- subset(social_ads, split == FALSE)
+```
+
+Here, we split the data into a training and test set to train our data. The `sample.split()` function does this and we use a ratio of 0.75 for training and 0.25 for testing (it's better to have more training data). These splits are then named based on the subsets we created through the split.
+
+### Feature scaling
+
+```{r warning = F, message = F}
+training_set[,1:2] <- scale(training_set[,1:2])
+test_set[,1:2] <- scale(test_set[,1:2])
+
+head(training_set)
+```
+
+Next, we scale each of the sets so that age and estimated salary are transformed into standard deviation units (as can be seen in the tibble).
+
+### Fitting the logistic regression to the training set
+
+```{r warning = F, message = F}
+classifier <- glm(formula = Purchased ~ .,
+                  family = binomial,
+                  data = training_set)
+```
+
+We use the general linear model function to create the classifier for the training data. Importantly, we select binomial within the 'family' argument for logistic regression.
+
+### Predicting the test set results
+
+```{r warning = F, message = F}
+prob_pred <- predict(classifier, type = 'response', 
+                    newdata = test_set[-3])
+
+y_pred <- ifelse(prob_pred > 0.5, 1, 0)
+```
+
+The `predict()` function is used to calculate the probability of our independent variables having a certain outcome (and this is assigned to a new variable). We then include this prediction in an ifelse statement to classify the value as either 0 or 1.
+  
+### Making the confusion matrix
+
+```{r warning = F, message = F}
+cm <- table(test_set[,3], y_pred)
+
+cm
+```
+
+The confusion matrix gives us the results of our test set. The matrix is split into the true & false positives and negatives. From the table, we can see that the model correctly predicted 60 of those people that did not purchase the ads (0, 0; true negative) and 23 of those that did purchase (1, 1; true positive). The accuracy can be calculated by: true positives + true negatives / total * 100. Therefore, the accuracy equals **83%** for the logistic regression classifier.
+
+### Visualising the training set
+
+```{r warning = F, message = F}
+set <- training_set
+X1 <- seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.02)
+X2 <- seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.02)
+grid_set <- expand.grid(X1, X2)
+colnames(grid_set) <- c('Age', 'EstimatedSalary')
+prob_set <- predict(classifier, type = 'response', newdata = grid_set)
+y_grid <- ifelse(prob_set > 0.5, 1, 0)
+
+plot(set[,-3],
+     main = 'Logistic Regression (Training set)',
+     xlab = 'Age',
+     ylab = 'Estimated Salary',
+     xlim = range(X1),
+     ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set,
+       pch = '.',
+       col = ifelse(y_grid == 1, 'springgreen3', 'tomato'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
+```
+
+This visualisation shows us how the logistic regression best split the training data into those that purchased and those that did not based on the line. The red region refers to the model's expectation for those who did not purchase, whereas the green region is the model's prediction for those that did. The red (did not purchase) and green (did purchase) data points refer to the actual purchasing outcomes.
+
+### Visualising the test set
+
+```{r warning = F, message = F}
+set <- test_set
+X1 <- seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.02)
+X2 <- seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.02)
+grid_set <- expand.grid(X1, X2)
+colnames(grid_set) <- c('Age', 'EstimatedSalary')
+prob_set <- predict(classifier, type = 'response', newdata = grid_set)
+y_grid <- ifelse(prob_set > 0.5, 1, 0)
+
+plot(set[,-3],
+     main = 'Logistic Regression (Test set)',
+     xlab = 'Age',
+     ylab = 'Estimated Salary',
+     xlim = range(X1),
+     ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set,
+       pch = '.',
+       col = ifelse(y_grid == 1, 'springgreen3', 'tomato'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
+```
+
+As can be seen, the model fit most data points into the correct region. We know the exact amount from our confusion matrix above (83/100 correct classifications.)
+
+## <centre> **Kernal support vector machine** <centre/>
+
+Before defining the kernal SVM, we shall define the SVM. For the SVM, the model attempts to find the optimal split to place the data into classes. A maximum margin hyperplane makes an equidistant line between two data points on opposing sides. These points are the support vectors and these are the only points which contribute to the algorithm. 
+
+However, SVMs assume that data is linearly separable and cannot help those situations where this isn't the case. This is where kernel SVMs come in. The "kernal trick" is used to create a gaussian radial basis function (RBF). The gaussian RBF creates a circumference with values inside of this given 1, and those outside equal to 0. This allows us to work with clusters that are not linearly separable. 
+
+### Loading libraries
+
+```{r warning = F, message = F}
+library(e1071)
+```
+
+`e1071` is needed for the SVM function.
+
+### Fitting the Kernel SVM to training set
+
+```{r warning = F, message = F}
+classifier <- svm(formula = Purchased ~ .,
+                  data = training_set,
+                  type = 'C-classification',
+                  kernel = 'radial')
+```
+
+Here, we create the kernal SVM classifier using `svm()`. The formula argument includes the dependent variable which is predicted by (~) all of the independent variables in the dataset. We select the type as classification and kernal as RBF.
+
+### Predicting the test set results
+
+```{r warning = F, message = F}
+y_pred <- predict(classifier, newdata = test_set[-3])
+```
+
+### Making the confusion matrix
+
+```{r warning = F, message = F}
+cm <- table(test_set[,3], y_pred)
+
+cm
+```
+
+Using the kernal SVM, we obtain an accuracy of **92%**. 
+
+### Visualising the training set results
+
+```{r warning = F, message = F}
+set <- training_set
+X1 <- seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.02)
+X2 <- seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.02)
+grid_set <- expand.grid(X1, X2)
+colnames(grid_set) <- c('Age', 'EstimatedSalary')
+y_grid <- predict(classifier, newdata = grid_set)
+
+plot(set[,-3],
+     main = 'Kernel SVM (Training set)',
+     xlab = 'Age',
+     ylab = 'Estimated Salary',
+     xlim = range(X1),
+     ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set,
+       pch = '.',
+       col = ifelse(y_grid == 1, 'springgreen3', 'tomato'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
+```
+
+The benefit of the kernal SVM is clear here. The data is not entirely linearly separable and this reflects how the model has trained the data.
+
+### Visualising the test set results
+
+```{r warning = F, message = F}
+set <- test_set
+X1 <- seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.02)
+X2 <- seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.02)
+grid_set <- expand.grid(X1, X2)
+colnames(grid_set) <- c('Age', 'EstimatedSalary')
+y_grid <- predict(classifier, newdata = grid_set)
+plot(set[,-3],
+     main = 'Kernel SVM (Test set)',
+     xlab = 'Age',
+     ylab = 'Estimated Salary',
+     xlim = range(X1),
+     ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set,
+       pch = '.',
+       col = ifelse(y_grid == 1, 'springgreen3', 'tomato'))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
+```
+
+When visualising the test data, we can see how well the model has performed - only 8 misclassifications. It is important to note that we do not wish to attain 100% accuracy as this would indicate that the model is overfitting (no generalisability to other datasets). It would be unlikely for another new test set to replicate 100% accuracy because is has been modelled on the previous test set too well.
+
+## <centre> **Naive Bayes** <centre/>
+
+Naive bayes is a probability classifier. "Naive" comes from the fact that it has independence assumptions (each IV is independent). The model is created by following Bayes theorem. The posterior probability for both category A and category B are calculated. The posterior probability involves three steps: calculating the prior probability (category observations/total), the marginal likelihood (similar observations/total) and the likelihood (similar observations in category/total). The posterior probabilities for both categories are then compared to see which has the greater probability. 
+
+### Encode categorical variable
+
+```{r warning = F, message = F}
+social_ads$Purchased = factor(social_ads$Purchased, levels = c(0, 1))
+```
+
+The naive bayes package (`e1071`) requires that values are either numeric or factors. Therefore, we factorise the DV. 
+
+```{r}
+split = sample.split(social_ads$Purchased, SplitRatio = 0.75)
+training_set = subset(social_ads, split == TRUE)
+test_set = subset(social_ads, split == FALSE)
+```
+
+
+### Fitting the naive bayes to training set
+
+```{r warning = F, message = F}
+classifier <- naiveBayes(x = training_set[,-3],
+                         y = training_set$Purchased)
+```
+
+The `naiveBayes()` function includes the IVs (x) and DV (y) to make the classifier.
+
+### Predicting the test set results
+
+```{r warning = F, message = F}
+y_pred <- predict(classifier, newdata = test_set[-3])
+```
+
+### Making the confusion matrix
+
+```{r warning = F, message = F}
+cm <- table(test_set[,3], y_pred)
+
+cm
+```
+
+Under naive bayes, the model has an accuracy of **86%**. 
+
+### Visualising the test set results
+
+
+We can see that naive bayes correctly classifies most of the test set data points but misses some points which seem to be higher in age and estimated salary. Nevertheless, no model is perfect and 86% accuracy is relatively high.
+
+## <centre> **Comparison of classifiers** <centre/>
+
+Based on the accuracy of these classifiers, the kernel SVM performed best. Followed by naive bayes and then logistic regression. Of course, with different data, this may not be the case. Clearly, this dataset better suited non-linear data (hence why the non-linear classifiers outperformed the linear one).
+
+In addition to accuracy, the precision, recall and F1 score can also be calculated. Depending on the research question, these measures may be better used for testing the model performance.
+
+Finally, we have looked at three classification methods here, but there are certainly more with their own pros and cons. Some of these include the decision tree, SVM, non-linear kernel SVR and K-nearest neighbour.
+
+
+

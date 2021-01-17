@@ -1,0 +1,257 @@
+---
+title: "A comparison of three classifiers"
+author: "Matthew Waddington"
+date: '2021-01-16T21:13:14-05:00'
+tags:
+- Logistic regression
+- Kernal SVM
+- Naive Bayes
+categories: R
+---
+
+
+
+<p>In this R Markdown, I go through three of the classification methods I learnt on a machine learning Udemy course. These classifiers include logistic regression, kernal support vector machine, and naive bayes. Each of these will be compared to see which one best classifies the dataset.</p>
+<p>The dataset is information from people who have/have not decided to purchase social media advertisements. This same dataset is used throughout, so the first classifier (LR) will go through all the steps in more detail.</p>
+<div id="logistic-regression" class="section level2">
+<h2><centre> <strong>Logistic regression</strong> <centre/></h2>
+<p>Whilst other forms of regression such as multiple linear regression and polynomial regression use continuous data, logistic regressions use categorical data. This categorical data is used as a classification predictor. The prediction is based on the sigmoid function which is either 0 or 1.</p>
+<div id="loading-libraries" class="section level3">
+<h3>Loading libraries</h3>
+<pre class="r"><code>library(caTools)
+library(ElemStatLearn)</code></pre>
+<p>To begin with, we load in the libraries needed for the logistic regression. <code>caTools</code> is used for splitting our data so that the model can be trained and then tested. <code>ElemStatLearn</code> is used to visualise our data.</p>
+</div>
+<div id="importing-the-data" class="section level3">
+<h3>Importing the data</h3>
+<pre class="r"><code>social_ads &lt;- read.csv(&#39;Social_Network_Ads.csv&#39;)
+
+head(social_ads)</code></pre>
+<pre><code>##    User.ID Gender Age EstimatedSalary Purchased
+## 1 15624510   Male  19           19000         0
+## 2 15810944   Male  35           20000         0
+## 3 15668575 Female  26           43000         0
+## 4 15603246 Female  27           57000         0
+## 5 15804002   Male  19           76000         0
+## 6 15728773   Male  27           58000         0</code></pre>
+<pre class="r"><code>social_ads &lt;- social_ads[,3:5]</code></pre>
+<p>The data is firstly read in and assigned. Using <code>head()</code> we can see that there are 5 columns witht he values for the first 6 rows. Purchased is the column which is categorised as 0 or 1 allowing us to perform logistic regression analysis. We then update this dataset by removing columns which are not relevant (i.e., ID and Gender).</p>
+</div>
+<div id="training-set-and-test-set" class="section level3">
+<h3>Training set and test set</h3>
+<pre class="r"><code>split &lt;- sample.split(social_ads$Purchased, SplitRatio = 0.75)
+training_set &lt;- subset(social_ads, split == TRUE)
+test_set &lt;- subset(social_ads, split == FALSE)</code></pre>
+<p>Here, we split the data into a training and test set to train our data. The <code>sample.split()</code> function does this and we use a ratio of 0.75 for training and 0.25 for testing (it’s better to have more training data). These splits are then named based on the subsets we created through the split.</p>
+</div>
+<div id="feature-scaling" class="section level3">
+<h3>Feature scaling</h3>
+<pre class="r"><code>training_set[,1:2] &lt;- scale(training_set[,1:2])
+test_set[,1:2] &lt;- scale(test_set[,1:2])
+
+head(training_set)</code></pre>
+<pre><code>##          Age EstimatedSalary Purchased
+## 1 -1.7989477      -1.4869001         0
+## 2 -0.2730688      -1.4579608         0
+## 5 -1.7989477       0.1626387         0
+## 6 -1.0360082      -0.3582683         0
+## 7 -1.0360082       0.3941530         0
+## 8 -0.5591710       2.3041453         1</code></pre>
+<p>Next, we scale each of the sets so that age and estimated salary are transformed into standard deviation units (as can be seen in the tibble).</p>
+</div>
+<div id="fitting-the-logistic-regression-to-the-training-set" class="section level3">
+<h3>Fitting the logistic regression to the training set</h3>
+<pre class="r"><code>classifier &lt;- glm(formula = Purchased ~ .,
+                  family = binomial,
+                  data = training_set)</code></pre>
+<p>We use the general linear model function to create the classifier for the training data. Importantly, we select binomial within the ‘family’ argument for logistic regression.</p>
+</div>
+<div id="predicting-the-test-set-results" class="section level3">
+<h3>Predicting the test set results</h3>
+<pre class="r"><code>prob_pred &lt;- predict(classifier, type = &#39;response&#39;, 
+                    newdata = test_set[-3])
+
+y_pred &lt;- ifelse(prob_pred &gt; 0.5, 1, 0)</code></pre>
+<p>The <code>predict()</code> function is used to calculate the probability of our independent variables having a certain outcome (and this is assigned to a new variable). We then include this prediction in an ifelse statement to classify the value as either 0 or 1.</p>
+</div>
+<div id="making-the-confusion-matrix" class="section level3">
+<h3>Making the confusion matrix</h3>
+<pre class="r"><code>cm &lt;- table(test_set[,3], y_pred)
+
+cm</code></pre>
+<pre><code>##    y_pred
+##      0  1
+##   0 60  4
+##   1  7 29</code></pre>
+<p>The confusion matrix gives us the results of our test set. The matrix is split into the true &amp; false positives and negatives. From the table, we can see that the model correctly predicted 60 of those people that did not purchase the ads (0, 0; true negative) and 23 of those that did purchase (1, 1; true positive). The accuracy can be calculated by: true positives + true negatives / total * 100. Therefore, the accuracy equals <strong>83%</strong> for the logistic regression classifier.</p>
+</div>
+<div id="visualising-the-training-set" class="section level3">
+<h3>Visualising the training set</h3>
+<pre class="r"><code>set &lt;- training_set
+X1 &lt;- seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.02)
+X2 &lt;- seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.02)
+grid_set &lt;- expand.grid(X1, X2)
+colnames(grid_set) &lt;- c(&#39;Age&#39;, &#39;EstimatedSalary&#39;)
+prob_set &lt;- predict(classifier, type = &#39;response&#39;, newdata = grid_set)
+y_grid &lt;- ifelse(prob_set &gt; 0.5, 1, 0)
+
+plot(set[,-3],
+     main = &#39;Logistic Regression (Training set)&#39;,
+     xlab = &#39;Age&#39;,
+     ylab = &#39;Estimated Salary&#39;,
+     xlim = range(X1),
+     ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set,
+       pch = &#39;.&#39;,
+       col = ifelse(y_grid == 1, &#39;springgreen3&#39;, &#39;tomato&#39;))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, &#39;green4&#39;, &#39;red3&#39;))</code></pre>
+<p><img src="/rstatistics/RMarkdown_classifiers/classifier_comp_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p>This visualisation shows us how the logistic regression best split the training data into those that purchased and those that did not based on the line. The red region refers to the model’s expectation for those who did not purchase, whereas the green region is the model’s prediction for those that did. The red (did not purchase) and green (did purchase) data points refer to the actual purchasing outcomes.</p>
+</div>
+<div id="visualising-the-test-set" class="section level3">
+<h3>Visualising the test set</h3>
+<pre class="r"><code>set &lt;- test_set
+X1 &lt;- seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.02)
+X2 &lt;- seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.02)
+grid_set &lt;- expand.grid(X1, X2)
+colnames(grid_set) &lt;- c(&#39;Age&#39;, &#39;EstimatedSalary&#39;)
+prob_set &lt;- predict(classifier, type = &#39;response&#39;, newdata = grid_set)
+y_grid &lt;- ifelse(prob_set &gt; 0.5, 1, 0)
+
+plot(set[,-3],
+     main = &#39;Logistic Regression (Test set)&#39;,
+     xlab = &#39;Age&#39;,
+     ylab = &#39;Estimated Salary&#39;,
+     xlim = range(X1),
+     ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set,
+       pch = &#39;.&#39;,
+       col = ifelse(y_grid == 1, &#39;springgreen3&#39;, &#39;tomato&#39;))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, &#39;green4&#39;, &#39;red3&#39;))</code></pre>
+<p><img src="/rstatistics/RMarkdown_classifiers/classifier_comp_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p>As can be seen, the model fit most data points into the correct region. We know the exact amount from our confusion matrix above (83/100 correct classifications.)</p>
+</div>
+</div>
+<div id="kernal-support-vector-machine" class="section level2">
+<h2><centre> <strong>Kernal support vector machine</strong> <centre/></h2>
+<p>Before defining the kernal SVM, we shall define the SVM. For the SVM, the model attempts to find the optimal split to place the data into classes. A maximum margin hyperplane makes an equidistant line between two data points on opposing sides. These points are the support vectors and these are the only points which contribute to the algorithm.</p>
+<p>However, SVMs assume that data is linearly separable and cannot help those situations where this isn’t the case. This is where kernel SVMs come in. The “kernal trick” is used to create a gaussian radial basis function (RBF). The gaussian RBF creates a circumference with values inside of this given 1, and those outside equal to 0. This allows us to work with clusters that are not linearly separable.</p>
+<div id="loading-libraries-1" class="section level3">
+<h3>Loading libraries</h3>
+<pre class="r"><code>library(e1071)</code></pre>
+<p><code>e1071</code> is needed for the SVM function.</p>
+</div>
+<div id="fitting-the-kernel-svm-to-training-set" class="section level3">
+<h3>Fitting the Kernel SVM to training set</h3>
+<pre class="r"><code>classifier &lt;- svm(formula = Purchased ~ .,
+                  data = training_set,
+                  type = &#39;C-classification&#39;,
+                  kernel = &#39;radial&#39;)</code></pre>
+<p>Here, we create the kernal SVM classifier using <code>svm()</code>. The formula argument includes the dependent variable which is predicted by (~) all of the independent variables in the dataset. We select the type as classification and kernal as RBF.</p>
+</div>
+<div id="predicting-the-test-set-results-1" class="section level3">
+<h3>Predicting the test set results</h3>
+<pre class="r"><code>y_pred &lt;- predict(classifier, newdata = test_set[-3])</code></pre>
+</div>
+<div id="making-the-confusion-matrix-1" class="section level3">
+<h3>Making the confusion matrix</h3>
+<pre class="r"><code>cm &lt;- table(test_set[,3], y_pred)
+
+cm</code></pre>
+<pre><code>##    y_pred
+##      0  1
+##   0 61  3
+##   1  3 33</code></pre>
+<p>Using the kernal SVM, we obtain an accuracy of <strong>92%</strong>.</p>
+</div>
+<div id="visualising-the-training-set-results" class="section level3">
+<h3>Visualising the training set results</h3>
+<pre class="r"><code>set &lt;- training_set
+X1 &lt;- seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.02)
+X2 &lt;- seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.02)
+grid_set &lt;- expand.grid(X1, X2)
+colnames(grid_set) &lt;- c(&#39;Age&#39;, &#39;EstimatedSalary&#39;)
+y_grid &lt;- predict(classifier, newdata = grid_set)
+
+plot(set[,-3],
+     main = &#39;Kernel SVM (Training set)&#39;,
+     xlab = &#39;Age&#39;,
+     ylab = &#39;Estimated Salary&#39;,
+     xlim = range(X1),
+     ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set,
+       pch = &#39;.&#39;,
+       col = ifelse(y_grid == 1, &#39;springgreen3&#39;, &#39;tomato&#39;))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, &#39;green4&#39;, &#39;red3&#39;))</code></pre>
+<p><img src="/rstatistics/RMarkdown_classifiers/classifier_comp_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+<p>The benefit of the kernal SVM is clear here. The data is not entirely linearly separable and this reflects how the model has trained the data.</p>
+</div>
+<div id="visualising-the-test-set-results" class="section level3">
+<h3>Visualising the test set results</h3>
+<pre class="r"><code>set &lt;- test_set
+X1 &lt;- seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.02)
+X2 &lt;- seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.02)
+grid_set &lt;- expand.grid(X1, X2)
+colnames(grid_set) &lt;- c(&#39;Age&#39;, &#39;EstimatedSalary&#39;)
+y_grid &lt;- predict(classifier, newdata = grid_set)
+plot(set[,-3],
+     main = &#39;Kernel SVM (Test set)&#39;,
+     xlab = &#39;Age&#39;,
+     ylab = &#39;Estimated Salary&#39;,
+     xlim = range(X1),
+     ylim = range(X2))
+contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+points(grid_set,
+       pch = &#39;.&#39;,
+       col = ifelse(y_grid == 1, &#39;springgreen3&#39;, &#39;tomato&#39;))
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, &#39;green4&#39;, &#39;red3&#39;))</code></pre>
+<p><img src="/rstatistics/RMarkdown_classifiers/classifier_comp_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
+<p>When visualising the test data, we can see how well the model has performed - only 8 misclassifications. It is important to note that we do not wish to attain 100% accuracy as this would indicate that the model is overfitting (no generalisability to other datasets). It would be unlikely for another new test set to replicate 100% accuracy because is has been modelled on the previous test set too well.</p>
+</div>
+</div>
+<div id="naive-bayes" class="section level2">
+<h2><centre> <strong>Naive Bayes</strong> <centre/></h2>
+<p>Naive bayes is a probability classifier. “Naive” comes from the fact that it has independence assumptions (each IV is independent). The model is created by following Bayes theorem. The posterior probability for both category A and category B are calculated. The posterior probability involves three steps: calculating the prior probability (category observations/total), the marginal likelihood (similar observations/total) and the likelihood (similar observations in category/total). The posterior probabilities for both categories are then compared to see which has the greater probability.</p>
+<div id="encode-categorical-variable" class="section level3">
+<h3>Encode categorical variable</h3>
+<pre class="r"><code>social_ads$Purchased = factor(social_ads$Purchased, levels = c(0, 1))</code></pre>
+<p>The naive bayes package (<code>e1071</code>) requires that values are either numeric or factors. Therefore, we factorise the DV.</p>
+<pre class="r"><code>split = sample.split(social_ads$Purchased, SplitRatio = 0.75)
+training_set = subset(social_ads, split == TRUE)
+test_set = subset(social_ads, split == FALSE)</code></pre>
+</div>
+<div id="fitting-the-naive-bayes-to-training-set" class="section level3">
+<h3>Fitting the naive bayes to training set</h3>
+<pre class="r"><code>classifier &lt;- naiveBayes(x = training_set[,-3],
+                         y = training_set$Purchased)</code></pre>
+<p>The <code>naiveBayes()</code> function includes the IVs (x) and DV (y) to make the classifier.</p>
+</div>
+<div id="predicting-the-test-set-results-2" class="section level3">
+<h3>Predicting the test set results</h3>
+<pre class="r"><code>y_pred &lt;- predict(classifier, newdata = test_set[-3])</code></pre>
+</div>
+<div id="making-the-confusion-matrix-2" class="section level3">
+<h3>Making the confusion matrix</h3>
+<pre class="r"><code>cm &lt;- table(test_set[,3], y_pred)
+
+cm</code></pre>
+<pre><code>##    y_pred
+##      0  1
+##   0 62  2
+##   1  6 30</code></pre>
+<p>Under naive bayes, the model has an accuracy of <strong>86%</strong>.</p>
+</div>
+<div id="visualising-the-test-set-results-1" class="section level3">
+<h3>Visualising the test set results</h3>
+<p>We can see that naive bayes correctly classifies most of the test set data points but misses some points which seem to be higher in age and estimated salary. Nevertheless, no model is perfect and 86% accuracy is relatively high.</p>
+</div>
+</div>
+<div id="comparison-of-classifiers" class="section level2">
+<h2><centre> <strong>Comparison of classifiers</strong> <centre/></h2>
+<p>Based on the accuracy of these classifiers, the kernel SVM performed best. Followed by naive bayes and then logistic regression. Of course, with different data, this may not be the case. Clearly, this dataset better suited non-linear data (hence why the non-linear classifiers outperformed the linear one).</p>
+<p>In addition to accuracy, the precision, recall and F1 score can also be calculated. Depending on the research question, these measures may be better used for testing the model performance.</p>
+<p>Finally, we have looked at three classification methods here, but there are certainly more with their own pros and cons. Some of these include the decision tree, SVM, non-linear kernel SVR and K-nearest neighbour.</p>
+</div>
