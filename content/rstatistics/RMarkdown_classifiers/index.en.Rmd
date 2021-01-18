@@ -1,5 +1,5 @@
 ---
-title: "A comparison of three classifiers"
+title: <center> **A comparison of three classifiers** </center>
 author: 'Matthew Waddington'
 date: '2021-01-17T21:13:14-05:00'
 tags:
@@ -10,15 +10,17 @@ tags:
 categories: R
 ---
 
+```{css, echo = FALSE}
+h2 {
+  text-align: center;
+}
+```
+
 In this R Markdown, I go through three of the classification methods I learnt on a machine learning Udemy course. These classifiers include logistic regression, kernal support vector machine, and naive bayes. Each of these will be compared to see which one best classifies the dataset.
 
 The dataset is information from people who have/have not decided to purchase social media advertisements. This same dataset is used throughout, so the first classifier (LR) will go through all the steps in more detail.
 
-<center>
-
 ## **Logistic regression** 
-
-</center>
 
 Whilst other forms of regression such as multiple linear regression and polynomial regression use continuous data, logistic regressions use categorical data. This categorical data is used as a classification predictor. The prediction is based on the sigmoid function which is either 0 or 1.
 
@@ -99,8 +101,8 @@ The confusion matrix gives us the results of our test set. The matrix is split i
 
 ```{r warning = F, message = F}
 set <- training_set
-X1 <- seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.02)
-X2 <- seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.02)
+X1 <- seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 <- seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
 grid_set <- expand.grid(X1, X2)
 colnames(grid_set) <- c('Age', 'EstimatedSalary')
 prob_set <- predict(classifier, type = 'response', newdata = grid_set)
@@ -125,8 +127,8 @@ This visualisation shows us how the logistic regression best split the training 
 
 ```{r warning = F, message = F}
 set <- test_set
-X1 <- seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.02)
-X2 <- seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.02)
+X1 <- seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 <- seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
 grid_set <- expand.grid(X1, X2)
 colnames(grid_set) <- c('Age', 'EstimatedSalary')
 prob_set <- predict(classifier, type = 'response', newdata = grid_set)
@@ -147,11 +149,7 @@ points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
 
 As can be seen, the model fit most data points into the correct region. We know the exact amount from our confusion matrix above (83/100 correct classifications.)
 
-<center>
-
 ## **Kernal support vector machine** 
-
-</center>
 
 Before defining the kernal SVM, we shall define the SVM. For the SVM, the model attempts to find the optimal split to place the data into classes. A maximum margin hyperplane makes an equidistant line between two data points on opposing sides. These points are the support vectors and these are the only points which contribute to the algorithm. 
 
@@ -196,8 +194,8 @@ Using the kernal SVM, we obtain an accuracy of **92%**.
 
 ```{r warning = F, message = F}
 set <- training_set
-X1 <- seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.02)
-X2 <- seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.02)
+X1 <- seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 <- seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
 grid_set <- expand.grid(X1, X2)
 colnames(grid_set) <- c('Age', 'EstimatedSalary')
 y_grid <- predict(classifier, newdata = grid_set)
@@ -221,8 +219,8 @@ The benefit of the kernal SVM is clear here. The data is not entirely linearly s
 
 ```{r warning = F, message = F}
 set <- test_set
-X1 <- seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.02)
-X2 <- seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.02)
+X1 <- seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 <- seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
 grid_set <- expand.grid(X1, X2)
 colnames(grid_set) <- c('Age', 'EstimatedSalary')
 y_grid <- predict(classifier, newdata = grid_set)
@@ -241,11 +239,7 @@ points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
 
 When visualising the test data, we can see how well the model has performed - only 8 misclassifications. It is important to note that we do not wish to attain 100% accuracy as this would indicate that the model is overfitting (no generalisability to other datasets). It would be unlikely for another new test set to replicate 100% accuracy because is has been modelled on the previous test set too well.
 
-<center>
-
 ## **Naive Bayes** 
-
-</center>
 
 Naive bayes is a probability classifier. "Naive" comes from the fact that it has independence assumptions (each IV is independent). The model is created by following Bayes theorem. The posterior probability for both category A and category B are calculated. The posterior probability involves three steps: calculating the prior probability (category observations/total), the marginal likelihood (similar observations/total) and the likelihood (similar observations in category/total). The posterior probabilities for both categories are then compared to see which has the greater probability. 
 
@@ -293,17 +287,13 @@ Under naive bayes, the model has an accuracy of **86%**.
 
 ![](NaiveBayesTrainSet.png)
 
-Here, we see the trained data for naive bayes to build its model. For these naive bayes plots, no code is provided as my machine could not render them using RMarkdown (so they are images taken from the R script). However, the code is exactly the same as seen in other plots, just with changes to the labels.
+Here, we see the trained data for naive bayes to build its model. For these naive bayes plots, no code is provided as my machine could not render them using RMarkdown due to vector exhaustion (so the images are taken from the R script). However, the code is exactly the same as seen in other plots, just with changes to the labels.
 
 ![](NaiveBayesTestSet.png)
 
 We can see that naive bayes correctly classifies most of the test set data points but misses some points which seem to be higher in age and estimated salary. Nevertheless, no model is perfect and 86% accuracy is relatively high.
 
-<center>
-
 ## **Comparison of classifiers** 
-
-</center>
 
 Based on the accuracy of these classifiers, the kernel SVM performed best. Followed by naive bayes and then logistic regression. Of course, with different data, this may not be the case. Clearly, this dataset better suited non-linear data (hence why the non-linear classifiers outperformed the linear one).
 
