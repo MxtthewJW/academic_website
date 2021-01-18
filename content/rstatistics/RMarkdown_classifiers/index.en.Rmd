@@ -1,8 +1,13 @@
 ---
-title: <center> **A comparison of three classifiers** </center>
+title: "A comparison of three classifiers"
 author: 'Matthew Waddington'
-date: "16/01/2021"
-output: html_document
+date: '2021-01-17T21:13:14-05:00'
+tags:
+- R Markdown
+- Logistic regression
+- Kernel SVM
+- Naive Bayes
+categories: R
 ---
 
 In this R Markdown, I go through three of the classification methods I learnt on a machine learning Udemy course. These classifiers include logistic regression, kernal support vector machine, and naive bayes. Each of these will be compared to see which one best classifies the dataset.
