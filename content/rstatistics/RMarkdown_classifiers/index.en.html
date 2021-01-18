@@ -8,6 +8,7 @@ tags:
 - Kernel SVM
 - Naive Bayes
 categories: R
+summary: In this R Markdown, I go through three of the classification methods I learnt on a machine learning Udemy course. These classifiers include logistic regression, kernal support vector machine, and naive bayes. Each of these will be compared to see which one best classifies the dataset.
 ---
 
 
@@ -56,13 +57,13 @@ test_set &lt;- subset(social_ads, split == FALSE)</code></pre>
 test_set[,1:2] &lt;- scale(test_set[,1:2])
 
 head(training_set)</code></pre>
-<pre><code>##          Age EstimatedSalary Purchased
-## 1 -1.7835197      -1.5325975         0
-## 4 -1.0251130      -0.4252574         0
-## 5 -1.7835197       0.1284126         0
-## 6 -1.0251130      -0.3961169         0
-## 7 -1.0251130       0.3615368         0
-## 8 -0.5511088       2.2848116         1</code></pre>
+<pre><code>##           Age EstimatedSalary Purchased
+## 1  -1.7451908      -1.4600453         0
+## 2  -0.2479762      -1.4313231         0
+## 7  -0.9965835       0.4068979         0
+## 8  -0.5287039       2.3025632         1
+## 9  -1.1837353      -1.0579344         0
+## 10 -0.2479762      -0.1388240         0</code></pre>
 <p>Next, we scale each of the sets so that age and estimated salary are transformed into standard deviation units (as can be seen in the tibble).</p>
 </div>
 <div id="fitting-the-logistic-regression-to-the-training-set" class="section level3">
@@ -87,8 +88,8 @@ y_pred &lt;- ifelse(prob_pred &gt; 0.5, 1, 0)</code></pre>
 cm</code></pre>
 <pre><code>##    y_pred
 ##      0  1
-##   0 55  9
-##   1 10 26</code></pre>
+##   0 57  7
+##   1 11 25</code></pre>
 <p>The confusion matrix gives us the results of our test set. The matrix is split into the true &amp; false positives and negatives. From the table, we can see that the model correctly predicted 60 of those people that did not purchase the ads (0, 0; true negative) and 23 of those that did purchase (1, 1; true positive). The accuracy can be calculated by: true positives + true negatives / total * 100. Therefore, the accuracy equals <strong>83%</strong> for the logistic regression classifier.</p>
 </div>
 <div id="visualising-the-training-set" class="section level3">
@@ -168,8 +169,8 @@ points(set, pch = 21, bg = ifelse(set[, 3] == 1, &#39;green4&#39;, &#39;red3&#39
 cm</code></pre>
 <pre><code>##    y_pred
 ##      0  1
-##   0 58  6
-##   1  4 32</code></pre>
+##   0 56  8
+##   1  1 35</code></pre>
 <p>Using the kernal SVM, we obtain an accuracy of <strong>92%</strong>.</p>
 </div>
 <div id="visualising-the-training-set-results" class="section level3">
@@ -246,8 +247,8 @@ test_set = subset(social_ads, split == FALSE)</code></pre>
 cm</code></pre>
 <pre><code>##    y_pred
 ##      0  1
-##   0 59  5
-##   1  8 28</code></pre>
+##   0 61  3
+##   1  5 31</code></pre>
 <p>Under naive bayes, the model has an accuracy of <strong>86%</strong>.</p>
 </div>
 <div id="visualising-the-test-set-results-1" class="section level3">

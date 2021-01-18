@@ -8,6 +8,7 @@ tags:
 - Kernel SVM
 - Naive Bayes
 categories: R
+summary: In this R Markdown, I go through three of the classification methods I learnt on a machine learning Udemy course. These classifiers include logistic regression, kernal support vector machine, and naive bayes. Each of these will be compared to see which one best classifies the dataset.
 ---
 
 ```{css, echo = FALSE}
