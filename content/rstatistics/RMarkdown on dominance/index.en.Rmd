@@ -9,7 +9,7 @@ tags:
 categories: R
 ---
 
-During a summer internship, I collected data for an experiment investigating the relationship between physical and social dominance under the topic of intrasexual competition. 
+During a summer internship in 2019, I collected data for an experiment investigating the relationship between physical and social dominance under the topic of intrasexual competition. 
 
 This was the first RMarkdown I'd produced. It goes through the data analysis process to test this hypothesis.
 
