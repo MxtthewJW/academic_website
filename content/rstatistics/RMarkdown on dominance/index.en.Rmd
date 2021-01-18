@@ -1,5 +1,5 @@
 ---
-title: <center> **The relationship between physical & social dominance** </center>
+title: 'The relationship between physical & social dominance'
 author: "Matthew Waddington"
 date: '2019-08-19T21:13:14-05:00'
 tags:

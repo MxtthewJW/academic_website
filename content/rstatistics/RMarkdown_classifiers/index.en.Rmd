@@ -1,5 +1,5 @@
 ---
-title: <center> **A comparison of three classifiers** </center>
+title: 'A comparison of three classifiers'
 author: 'Matthew Waddington'
 date: '2021-01-17T21:13:14-05:00'
 tags:
