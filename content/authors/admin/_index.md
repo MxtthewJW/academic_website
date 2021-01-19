@@ -11,8 +11,7 @@ education:
 email: "matt.waddington@hotmail.com"
 highlight_name: false
 interests:
-- Neuropsychology 
-- Clinical Psychology
+- Clinical Neuropsychology 
 - Data Science
 - Statistics
 organizations:
@@ -36,6 +35,6 @@ superuser: true
 title: Matthew Waddington
 ---
 
-Matthew Waddington is an MRes Psychology student at the University of Manchester. His research interests include neuropsychology, clinical psychology, data science and statistics. His current project is focused diagnosis performance for vascular dementia.
+Matthew Waddington is an MRes Psychology student at the University of Manchester. His research interests include neuropsychology, clinical psychology, data science and statistics. His current project is focused on diagnosis performance for vascular dementia.
 
 {{< icon name="download" pack="fas" >}} Download my {{< staticref "media/resume.pdf" "newtab" >}}CV{{< /staticref >}}.
