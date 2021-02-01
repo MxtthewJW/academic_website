@@ -2,7 +2,7 @@
 authors:
 - admin
 categories:
-date: "2016-04-20T00:00:00Z"
+date: '2020-03-11T21:13:14-05:00'
 draft: false
 featured: false
 image: 
@@ -10,7 +10,7 @@ image:
   focal_point: ""
   placement: 2
   preview_only: false
-lastmod: "2020-03-11T00:00:00Z"
+lastmod: 
 projects: []
 subtitle: "The following essay will argue that AD should not be considered as a unitary disorder because of the high variation in clinical, neuroimaging, and neuropathological presentations."
 summary: "The following essay will argue that AD should not be considered as a unitary disorder because of the high variation in clinical, neuroimaging, and neuropathological presentations."

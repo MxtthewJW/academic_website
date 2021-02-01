@@ -1,5 +1,5 @@
 ---
-date: "2020-03-02"
+date: '2020-03-02T21:13:14-05:00'
 diagram: 
 image:
   caption: 'Image credit: [**NBC News**](https://www.nbcnews.com/better/lifestyle/how-break-your-therapist-learn-something-it-ncna980581)'
