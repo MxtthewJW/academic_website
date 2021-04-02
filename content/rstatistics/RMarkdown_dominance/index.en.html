@@ -7,10 +7,15 @@ tags:
 - PCA
 - Bayesian Analysis
 categories: R
+image: 
+  caption: 'Image credit: [**IResearchNet**](http://psychology.iresearchnet.com/social-psychology/group/social-dominance-orientation/)'
 ---
 
-<p>During a summer internship in 2019, I collected data for an experiment investigating the relationship between physical and social dominance under the topic of intrasexual competition.</p>
-<p>This was the first RMarkdown I’d produced. It goes through the data analysis process to test this hypothesis.</p>
+<script src="{{< blogdown/postref >}}index.en_files/header-attrs/header-attrs.js"></script>
+
+
+<p>During a summer internship in 2019, I collected data for an experiment investigating the relationship between physical and social dominance under the topic of intrasexual competition (i.e., same-sex competition).</p>
+<p>This was the first RMarkdown I’d produced. It goes through the data cleaning and analysis process to test this hypothesis.</p>
 <div id="loading-packages" class="section level2">
 <h2>Loading packages</h2>
 <pre class="r"><code>library(tidyverse)
@@ -19,7 +24,7 @@ library(lme4)
 library(lmerTest)
 library(pacman)
 library(BayesFactor)</code></pre>
-<p>Firstly, here is a quick overview of each package. <code>tidyverse</code> is used for <code>ggplot2</code> and reads in our data. The <code>psych</code> package is used for our correlation analyses and reliability testing. Both <code>lme4</code> and <code>lmerTest</code> produce the linear model. For principle compenetns analysis and Bayesian analysis, <code>pacman</code> and <code>BayesFactor</code> are needed, respectively.</p>
+<p>Firstly, here is a quick overview of each package. <code>tidyverse</code> is used for <code>ggplot2</code> and reads in our data. The <code>psych</code> package is used for our correlation analyses and reliability testing. Both <code>lme4</code> and <code>lmerTest</code> produce the linear model. For principal component analysis and Bayesian analysis, <code>pacman</code> and <code>BayesFactor</code> are needed, respectively.</p>
 </div>
 <div id="importing-data" class="section level2">
 <h2>Importing data</h2>
@@ -191,8 +196,8 @@ summary(dom_lmodel) </code></pre>
 ## F-statistic:  1.23 on 3 and 100 DF,  p-value: 0.3029</code></pre>
 <p>Since none of the variables are significant, we have no evidence to support the relationship.</p>
 </div>
-<div id="principle-components-analysis-pca" class="section level2">
-<h2>Principle Components Analysis (PCA)</h2>
+<div id="principal-components-analysis-pca" class="section level2">
+<h2>Principal Components Analysis (PCA)</h2>
 <p>PCA is an unsupervised approach to classify data into clusters. We use it below for the dominance scale, social dominance measure and physical measures.</p>
 <div id="pca-for-dominance-scale" class="section level3">
 <h3>PCA for Dominance Scale</h3>
@@ -213,7 +218,7 @@ summary(SocDomPCA) </code></pre>
 ## Proportion of Variance 0.04444 0.03534 0.03323
 ## Cumulative Proportion  0.93142 0.96677 1.00000</code></pre>
 <p>To do the PCA, we firstly remove any NA values. In the <code>pacman</code> package, the <code>prcomp()</code> function creates the PCA and we centre and scale this so that the mean is equal to zero and the variance is based on SD units.</p>
-<p>The <code>summary()</code> shows us in the proportion of variance row that PC1 accounts for 40% of the variance in the data, PC2 accounts for 13%, PC3 10% and so on… Within this data, there are 10 principle components which explain almost all of the variance in our data.</p>
+<p>The <code>summary()</code> shows us in the proportion of variance row that PC1 accounts for 40% of the variance in the data, PC2 accounts for 13%, PC3 10% and so on… Within this data, there are 10 principal components which explain almost all of the variance in our data.</p>
 <p>We can plot this in a graph.</p>
 <pre class="r"><code>plot(SocDomPCA)    </code></pre>
 <p><img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>

@@ -1,0 +1,1061 @@
+---
+title: 'Linear mixed effects models'
+author: 'Matthew Waddington'
+date: '2021-03-05T21:13:14-05:00'
+tags:
+- R Markdown
+- Linear Mixed Effects Models
+categories: R
+summary: In this R Markdown, I go through two experimental datasets to tidy, visualise and model the results for interpretation. 
+image: 
+  caption: 'Image credit: [**Shutterstock**](https://www.shutterstock.com/search/reaction+time)'
+---
+
+<script src="{{< blogdown/postref >}}index.en_files/header-attrs/header-attrs.js"></script>
+<script src="{{< blogdown/postref >}}index.en_files/kePrint/kePrint.js"></script>
+<link href="{{< blogdown/postref >}}index.en_files/lightable/lightable.css" rel="stylesheet" />
+
+
+<style type="text/css">
+h1 {
+  text-align: center;
+}
+</style>
+<p>In this R Markdown, I go through two experimental datasets to tidy, visualise and model the results for interpretation. All code was produced with R Version 4.0.3 (see end of document for full session info).</p>
+<div id="loading-in-the-library-packages" class="section level2">
+<h2><strong>Loading in the library packages</strong></h2>
+<pre class="r"><code>library(tidyverse)
+library(visdat)
+library(ggridges)
+library(ggdark)
+library(ggtext)
+library(lme4)
+library(lmerTest)
+library(performance)
+library(emmeans)
+library(fitdistrplus)
+library(patchwork)
+library(devtools)
+library(knitr)
+library(kableExtra)</code></pre>
+<p>Firstly, we load in the packages needed to explore each of the experimental datasets. <code>{tidyverse}</code> is used for visualisation with <code>{ggplot2}</code>, reads in our data, and also allows the use of pipes. <code>{visdat}</code> visualises any missing data that may be present in our datasets. We use <code>{ggridges}</code> to plot density ridges for our data. The <code>{ggdark}</code> package provides us with a dark theme for our plots and <code>{ggtext}</code> is used to give a textbox for our graph titles. For data analysis, <code>{lme4}</code> provides functions to analyse mixed models and <code>{lmerTest}</code> performs tests and provides p-values for linear mixed models. We also use the <code>{performance}</code> package to check model assumptions. <code>{emmeans}</code> is used to provide adjusted mean values and pairwise comparisons. The <code>{fitdisrplus}</code> package includes the Cullen &amp; Grey plot which is informative for assessing the appropriate distribution for our data. <code>{patchwork}</code> combines our <code>{ggplot2}</code> plots into a single visualisation. Finally, the last three packages: <code>{devtools}</code>, <code>{knitr}</code>, and <code>{kableExtra}</code> are used to create the session info tables.</p>
+</div>
+<div id="importing-the-data" class="section level2">
+<h2><strong>Importing the data</strong></h2>
+<pre class="r"><code>Q1_data &lt;- read_csv(&quot;assignment1_data1.csv&quot;)
+Q2_data &lt;- read_csv(&quot;assignment1_data2.csv&quot;)</code></pre>
+<p>We begin by reading in each of the datasets using the <code>read_csv()</code> function. Each dataset is assigned to a named object (e.g., ‘Q1_data’ refers to Question 1’s experimental dataset).</p>
+</div>
+<div id="experiment-1" class="section level1">
+<h1><strong>Experiment 1</strong></h1>
+<p>Within this repeated measures experiment, 24 participants had to respond to a word in one of three contexts. These contexts were positive, neutral, and negative.</p>
+<div id="data-wrangling" class="section level2">
+<h2><strong>Data wrangling</strong></h2>
+<div id="checking-the-data" class="section level3">
+<h3>Checking the data</h3>
+<pre class="r"><code>head(Q1_data)</code></pre>
+<pre><code>## # A tibble: 6 x 4
+##   subj  item     DV condition
+##   &lt;chr&gt; &lt;chr&gt; &lt;dbl&gt; &lt;chr&gt;    
+## 1 S1    I1      867 Neutral  
+## 2 S1    I2     1111 Positive 
+## 3 S1    I3      771 Negative 
+## 4 S1    I4      626 Neutral  
+## 5 S1    I5     1333 Positive 
+## 6 S1    I6      846 Negative</code></pre>
+<p>For the data wrangling, we begin by observing the first six rows and their associated columns using the <code>head()</code> function. We see that there are four columns referring to the subject, item, response time, and contextual condition.</p>
+<pre class="r"><code>vis_miss(Q1_data)</code></pre>
+<p><img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p>In order to check for missing data, we use <code>vis_miss()</code> within the <code>{visdat}</code> package to find this out. The visualisation suggests that this is a complete dataset and we are therefore not concerned with any missing data.</p>
+</div>
+<div id="tidying-the-data" class="section level3">
+<h3>Tidying the data</h3>
+<pre class="r"><code>Q1_tidied &lt;- Q1_data %&gt;% 
+  mutate(condition = factor(condition), subj = factor(subj), 
+         item = factor(item))</code></pre>
+<p>After observing the structure of the dataset, we saw that three of the columns were inappropriately labeled as characters (represented by <code>&lt;chr&gt;</code>). These columns are converted into factors since we are interested in the different conditions within each factor. The <code>mutate()</code> function converts the data types for condition, subject, and item.</p>
+<pre class="r"><code>colnames(Q1_tidied) &lt;- c(&#39;Subject&#39;, &#39;Item&#39;, &#39;Response_Time&#39;, 
+                         &#39;Context&#39;)</code></pre>
+<p>The columns are renamed using <code>colnames()</code> which should specify the dataset within brackets. Then, columns of interest are renamed within the <code>c()</code> function and assigned to the original dataset.</p>
+</div>
+</div>
+<div id="creating-summary-statistics" class="section level2">
+<h2><strong>Creating summary statistics</strong></h2>
+<pre class="r"><code>Q1_tidied %&gt;%
+  group_by(Context) %&gt;%
+  summarise(Mean = mean(Response_Time), SD = sd(Response_Time))</code></pre>
+<pre><code>## # A tibble: 3 x 3
+##   Context   Mean    SD
+## * &lt;fct&gt;    &lt;dbl&gt; &lt;dbl&gt;
+## 1 Negative 1088.  565.
+## 2 Neutral  1185.  562.
+## 3 Positive 1257.  553.</code></pre>
+<p>The <code>summarise()</code> function can provide us with some basic descriptive statistics. First, we call our dataset, use the <code>group_by()</code> function to indicate that we want the statistics for the context factor, and then include the mean and standard deviation for our dependent vaiable (i.e., the response time). Based on these statistics alone, it seems possible that there is a meaningful difference between each of these conditions.</p>
+</div>
+<div id="visualising-the-data" class="section level2">
+<h2><strong>Visualising the data</strong></h2>
+<pre class="r"><code>Q1_tidied %&gt;% 
+  ggplot(aes(x = Response_Time, y = Context)) +
+  geom_density_ridges(scale = 2, rel_min_height = 0.001, fill = &quot;#7DCCFF&quot;,
+    colour = &quot;white&quot;, alpha = 0.5) +
+  stat_summary(fun.data = &quot;mean_cl_boot&quot;, colour = &quot;white&quot;, shape = &quot;diamond&quot;,
+               fill = &quot;grey30&quot;, size = 0.75) +
+  scale_x_continuous(name = &quot;Response Time (ms)&quot;, expand = c(0, 0), 
+                     breaks  = c(0, 1000, 2000, 3000, 4000, 5000)) +
+  scale_y_discrete(expand = expansion(add = c(0.1, 2))) +
+  dark_theme_grey() +
+  theme(text = element_text(size = 20, family = &quot;Times&quot;, colour = &quot;grey&quot;),
+        plot.title = ggtext::element_textbox_simple(
+          color = &quot;grey&quot;, fill = &quot;black&quot;, size = 28, width = 0.75,
+          padding = margin(8, 4, 8, 4), margin = margin(b = 0), lineheight = 1),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(angle = 45, hjust = 0.5),
+        axis.ticks.y = element_blank(),
+        plot.caption = element_text(size = 14, hjust = 0),
+        plot.background = element_rect(fill = &quot;grey10&quot;),
+        panel.background = element_blank(),
+        panel.grid.major = element_line(color = &quot;grey30&quot;, size = 0.2),
+        panel.grid.minor = element_line(color = &quot;grey30&quot;, size = 0.2)) +
+  labs(title = &quot;The Influence of Context on Word Response Time&quot;,
+       caption = &quot;Note: The diamond represents the mean and 95% bootstrapped confidence intervals&quot;)</code></pre>
+<p><img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-9-1.png" width="1152" /></p>
+<p>For visualising our data, we create a density ridges plot to compare response time distributions across contexts. We firstly set the aesthetics within <code>ggplot()</code> for the x- and y-axis. We can then add our chosen geometry, the <code>geom_density_ridges()</code> within the <code>{ggridges}</code> package. We ‘scale’ the distributions so that they overlap slightly for comparison and set ‘rel_min_height’ equal to 0.001 so that only relative density values above this are shown - this makes smaller spikes in the plot more noticeable. Within the function, we also fill each plot with a light blue shade, colour the outline in white and set the translucency with ‘alpha’.</p>
+<p>Once the basic layers are added, we also include <code>stat_summary()</code> and specify the ‘fun.data’ argument to add the mean and bootstrapped 95% confidence intervals for each of the levels. Next, we use <code>scale_x_continuous()</code> to modify the x-axis title and change the x-axis continuous scale ‘break’ values to refer to the plot easier. <code>scale_y_discrete()</code>is also used to expand the grid coordinates so that the density ridges cover the entire plot grid.</p>
+<p>Further, several theme-related changes are made to show a simple yet effective graph. First, a dark grey theme is added with <code>dark_theme_grey()</code>. Next, <code>theme()</code> functions to alter the text size, font, and colour are included with <code>element_text()</code>. Then, the <code>{ggtext}</code> function, <code>element_textbox_simple()</code>, is used to add the black text box with several changes to ensure it fits well with the title. Other micro changes within <code>theme()</code> include, but are not limited to, the y-axis text rotation by 90 degrees using ‘angle’, text centering using ‘hjust = 0.5’, and removal of tick marks with ‘axis.text.x/y’. Finally, we add labels for the title and caption using <code>labs()</code>.</p>
+<p>Upon completion, the density ridges show that the data is fairly normally distributed with a slight positive skew. Within response time data, it is fairly normal to have a slight positive skew with some data points extending well above the mean. More over, this data will be analysed with linear mixed effects models which are considered to be robust against extreme data points (since they are weighted very low). The means depicted by the white diamond clearly show the difference in average response times between each level of context.</p>
+</div>
+<div id="building-the-linear-mixed-effects-models" class="section level2">
+<h2><strong>Building the linear mixed effects models</strong></h2>
+<p>Now we analyse our data using linear mixed effects models. These models are flexible since both random and fixed effects can be included. For example, participants and experimental stimuli can be added as random effects to account for potential differences. Additionally, they allow several different types of data to be analysed such as continuous and categorical variables.</p>
+<p>For this dataset, we will first build the most complex model to see if it converges and fits. Whilst there are a few different approaches that can be taken when building these models, we will systematically simplify the random effects structure until parameter estimations are available.</p>
+<div id="first-model-maximal-model" class="section level3">
+<h3>First model: Maximal model</h3>
+<pre class="r"><code>Q1_model &lt;- lmer(Response_Time ~ Context + (1 + Context | Subject) + 
+                         (1 + Context | Item), data = Q1_tidied)</code></pre>
+<pre><code>## boundary (singular) fit: see ?isSingular</code></pre>
+<p>The <code>lmer()</code> function from <code>{lme4}</code> builds the model and follows a very similar structure to that of linear models.</p>
+<p>To break each part down, the dependent variable is first specified (i.e., RT). After the tilde, the fixed effect refers to <code>Context</code> which is before the random effects structure outside of brackets and accounts for differences between contexts. The first random effects structure includes the <code>(1 | Subject)</code> which refers to the random intercept for subject. This part accounts for variability between subjects. We also add a random slope <code>+ Context</code> which accounts for the magnitude of difference between contexts for each subject. This is also done for the items because variability would also be expected. Lastly, the dataset that we wish to build the model for is stated.</p>
+<p>Once the model is built, it converges but has a boundary singular fit warning. This suggests that our model is trying to estimate more parameters that what our data can support. However, according to <a href="https://www.sciencedirect.com/science/article/pii/S0749596X12001180?casa_token=zfRyHzzmegwAAAAA:mOjmI5CV8JVqqg6LJ7fpDzs84v4sXn6OHj4VYridTReqWeCl9S0YSYtC0O6Ys6sSRo8nSNeXzfIv">Barr et al. (2013)</a>, the maximal model should almost always be built if it makes theoretical sense. For instance, it is likely that the singular fit warning would disappear if the random slopes are removed, but the issue with this is that it increases the Type 1 error rate. Thus, since it makes theoretical sense that the magnitude of difference between both subjects and items may differ as a result of the context, both random slopes will remain.</p>
+<pre class="r"><code>performance::check_model(Q1_model)</code></pre>
+<p><img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-11-1.png" width="1056" /></p>
+<p>From the <code>{performance}</code> package, we check our model’s assumptions using <code>check_model()</code>. The model assumptions all seem to be okay other than perhaps the normality of residuals plot. We see that theoretical quantiles beyond a value of approximately 850 begin to rise exponentially.</p>
+<pre class="r"><code>descdist(Q1_tidied$Response_Time, boot = 500)</code></pre>
+<p><img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<pre><code>## summary statistics
+## ------
+## min:  298   max:  5240 
+## median:  1087.5 
+## mean:  1176.831 
+## estimated sd:  563.2772 
+## estimated skewness:  1.781516 
+## estimated kurtosis:  10.24243</code></pre>
+<p>Since the normality of residuals plot is a potential issue, it may be worth modeling our data under a different distribution. We can use the Cullen and Frey graph to find this out. In the <code>{fitdistrplus}</code> package, <code>descdist()</code> can be used by specifying the dataset and dependent variable. In addition, the ‘boot’ argument is applied to visualise 500 bootstrapped values that help interpret the observation value.</p>
+<p>Based on this output, it seems that our data fits most closely to a lognormal distribution. However, we are dealing with response time data which provide raw values and should not be transformed if not necessary. Log transforming the data can lead to misinterpretation of the data. To quote <a href="https://www.frontiersin.org/articles/10.3389/fpsyg.2015.01171/full">Lo &amp; Andrews (2015)</a>, “applying a transformation to yield the normal distribution required for LMM, the researcher may ultimately fail to test their hypotheses using the dependent variable that underpinned their theoretical predictions”.</p>
+<p>It is important to note that all models are inherently limited. So, whilst the normality of residuals are not entirely linear, they provide a relatively good fit of our data when compared to the alternative of log transforming raw values.</p>
+<pre class="r"><code>summary(Q1_model)</code></pre>
+<pre><code>## Linear mixed model fit by REML. t-tests use Satterthwaite&#39;s method [
+## lmerModLmerTest]
+## Formula: Response_Time ~ Context + (1 + Context | Subject) + (1 + Context |  
+##     Item)
+##    Data: Q1_tidied
+## 
+## REML criterion at convergence: 8710.2
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -2.2041 -0.6201 -0.1516  0.3789  7.7563 
+## 
+## Random effects:
+##  Groups   Name            Variance Std.Dev. Corr       
+##  Subject  (Intercept)     106653   326.58              
+##           ContextNeutral    2357    48.54   -1.00      
+##           ContextPositive   6042    77.73   -1.00  1.00
+##  Item     (Intercept)      33388   182.72              
+##           ContextNeutral    1723    41.51   -0.06      
+##           ContextPositive   4422    66.50   -0.54  0.87
+##  Residual                 204930   452.69              
+## Number of obs: 574, groups:  Subject, 24; Item, 24
+## 
+## Fixed effects:
+##                 Estimate Std. Error      df t value Pr(&gt;|t|)    
+## (Intercept)      1086.36      83.12   30.24  13.070 5.64e-14 ***
+## ContextNeutral     98.47      48.13   44.30   2.046  0.04673 *  
+## ContextPositive   170.95      50.76   23.08   3.368  0.00265 ** 
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Correlation of Fixed Effects:
+##             (Intr) CntxtN
+## ContextNtrl -0.438       
+## ContextPstv -0.570  0.545
+## optimizer (nloptwrap) convergence code: 0 (OK)
+## boundary (singular) fit: see ?isSingular</code></pre>
+<p>A <code>summary()</code> of our model provides us with the statistical significance for the fixed effects as well as other values of less interest here. The intercept refers to the negative context mean. It is based on the default dummy coding whereby the first condition is alphabetically chosen as the intercept. The output for fixed effects shows that the neutral and positive contextual levels are significant. So, the neutral and positive condition means are, respectively, 98ms and 171ms slower than the negative condition mean.</p>
+<p>Our descriptive statistics and visualisation suggests that this difference is between each of these two contexts and the negative context. However, we will check this more precisely with pairwise comparisons.</p>
+<pre class="r"><code>emmeans(Q1_model, pairwise ~ Context)</code></pre>
+<pre><code>## $emmeans
+##  Context  emmean   SE   df lower.CL upper.CL
+##  Negative   1086 83.1 29.8      917     1256
+##  Neutral    1185 75.6 30.2     1030     1339
+##  Positive   1257 68.4 28.2     1117     1397
+## 
+## Degrees-of-freedom method: kenward-roger 
+## Confidence level used: 0.95 
+## 
+## $contrasts
+##  contrast            estimate   SE   df t.ratio p.value
+##  Negative - Neutral     -98.5 48.1 11.6 -2.046  0.1451 
+##  Negative - Positive   -170.9 50.8 13.0 -3.367  0.0130 
+##  Neutral - Positive     -72.5 47.2 11.3 -1.534  0.3124 
+## 
+## Degrees-of-freedom method: kenward-roger 
+## P value adjustment: tukey method for comparing a family of 3 estimates</code></pre>
+<p>Here, <code>emmeans()</code> provides us with the adjusted means for each context as well as the pairwise comparisons with a default Tukey multiple comparisons adjustment. Since we had no directional hypothesis (i.e., we did not specify which effects we expected), we have adjusted for all three comparisons.</p>
+<p>We see that the only statistically significant difference is between negative to positive contexts. Therefore, when a word is shown in a negative context, the response times are significantly quicker than in positive contexts.</p>
+</div>
+<div id="second-model-simplified-random-effects-structure" class="section level3">
+<h3>Second model: Simplified random effects structure</h3>
+<p>If the model summary output is consistent when a simplified random effects structure is built, we can have increased confidence that the findings are true. So, we fit a simplified linear mixed effects model which does not have the issue of a singular boundary fit.</p>
+<pre class="r"><code>Q1_model_simp &lt;- lmer(Response_Time ~ Context + (1 | Subject) + 
+                   (1 | Item), data = Q1_tidied)</code></pre>
+<p>This model is equivalent to the previous model except that the random slopes have been removed for both subject and item. This means that we have not accounted for the magnitude of difference in response times for context with both subjects and items.</p>
+<pre class="r"><code>summary(Q1_model_simp)</code></pre>
+<pre><code>## Linear mixed model fit by REML. t-tests use Satterthwaite&#39;s method [
+## lmerModLmerTest]
+## Formula: Response_Time ~ Context + (1 | Subject) + (1 | Item)
+##    Data: Q1_tidied
+## 
+## REML criterion at convergence: 8713.1
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -2.4202 -0.6259 -0.1500  0.4040  7.5278 
+## 
+## Random effects:
+##  Groups   Name        Variance Std.Dev.
+##  Subject  (Intercept)  80886   284.4   
+##  Item     (Intercept)  29611   172.1   
+##  Residual             206878   454.8   
+## Number of obs: 574, groups:  Subject, 24; Item, 24
+## 
+## Fixed effects:
+##                 Estimate Std. Error      df t value Pr(&gt;|t|)    
+## (Intercept)      1086.50      75.42   45.21  14.407  &lt; 2e-16 ***
+## ContextNeutral     98.28      46.55  525.13   2.111 0.035234 *  
+## ContextPositive   170.80      46.49  525.09   3.674 0.000263 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Correlation of Fixed Effects:
+##             (Intr) CntxtN
+## ContextNtrl -0.309       
+## ContextPstv -0.309  0.501</code></pre>
+<p>The summary shows us that these fixed effects are still significant so we further investigate this with pairwise comparisons.</p>
+<pre class="r"><code>emmeans(Q1_model_simp, pairwise ~ Context)</code></pre>
+<pre><code>## $emmeans
+##  Context  emmean   SE   df lower.CL upper.CL
+##  Negative   1087 75.4 45.2      935     1238
+##  Neutral    1185 75.4 45.2     1033     1337
+##  Positive   1257 75.4 45.1     1106     1409
+## 
+## Degrees-of-freedom method: kenward-roger 
+## Confidence level used: 0.95 
+## 
+## $contrasts
+##  contrast            estimate   SE  df t.ratio p.value
+##  Negative - Neutral     -98.3 46.6 525 -2.111  0.0885 
+##  Negative - Positive   -170.8 46.5 525 -3.674  0.0008 
+##  Neutral - Positive     -72.5 46.5 525 -1.560  0.2640 
+## 
+## Degrees-of-freedom method: kenward-roger 
+## P value adjustment: tukey method for comparing a family of 3 estimates</code></pre>
+<p>For the simplified linear mixed effects model, we see that the negative to positive context is still significant which suggests this is the only robust effect.</p>
+</div>
+<div id="likelihood-ratio-test" class="section level3">
+<h3>Likelihood ratio test</h3>
+<p>Since each model is a subset of the others, we can compare them to see which explains the most variability.</p>
+<pre class="r"><code>anova(Q1_model, Q1_model_simp)</code></pre>
+<pre><code>## Data: Q1_tidied
+## Models:
+## Q1_model_simp: Response_Time ~ Context + (1 | Subject) + (1 | Item)
+## Q1_model: Response_Time ~ Context + (1 + Context | Subject) + (1 + Context | 
+## Q1_model:     Item)
+##               npar    AIC    BIC  logLik deviance  Chisq Df Pr(&gt;Chisq)
+## Q1_model_simp    6 8754.2 8780.3 -4371.1   8742.2                     
+## Q1_model        16 8771.4 8841.0 -4369.7   8739.4 2.8302 10     0.9851</code></pre>
+<p>The LRT is produced by including each of the models within the <code>anova()</code> function. The values of interest are the AIC, BIC, and deviance - with lower values suggesting greater explanation of variance within our data.</p>
+<p>What we find is that, actually, the simplified LMEM without random slopes explains more variance based on all three values being lower than the maximal model. This is possibly because the maximal model has 16 parameters compared to only 6 in the simplified model and these criteria penalise parameters which simply add noise to the data. Although, the difference between these models is not statistically significant which suggests neither model necessarily outperforms the other. Nevertheless, the same significant simple effect is found in both models suggesting that it is a robust finding.</p>
+</div>
+</div>
+</div>
+<div id="experiment-2" class="section level1">
+<h1><strong>Experiment 2</strong></h1>
+<p>The second experiment was a 2x2 repeated measures design. Subjects had to respond to a face that resembled anger or fear after being presented with a story vignette that described an angry or fearful situation.</p>
+<div id="data-wrangling-1" class="section level2">
+<h2><strong>Data wrangling</strong></h2>
+<div id="checking-the-data-1" class="section level3">
+<h3>Checking the data</h3>
+<pre class="r"><code>head(Q2_data)</code></pre>
+<pre><code>## # A tibble: 6 x 5
+##   Subject Vignette StoryEmotion FaceExpression    RT
+##     &lt;dbl&gt;    &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;          &lt;dbl&gt;
+## 1      38       10 Anger        Anger           2896
+## 2      39       10 Anger        Anger           2676
+## 3      40        9 Anger        Anger           1199
+## 4      42       10 Anger        Anger           2464
+## 5      44        9 Anger        Anger           2010
+## 6      45       10 Anger        Anger           2343</code></pre>
+<p>The <code>head()</code> function shows us that we have five columns referring to the subject, item, the two independent variables, and the dependent variable.</p>
+<pre class="r"><code>vis_miss(Q2_data)</code></pre>
+<p><img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
+<p>As before, we check that there is no missing data before going further with summary statistics, visualisations and analyses.</p>
+</div>
+<div id="tidying-the-data-1" class="section level3">
+<h3>Tidying the data</h3>
+<pre class="r"><code>Q2_tidied &lt;- Q2_data %&gt;% 
+  mutate(Subject = factor(Subject), Vignette = factor(Vignette), 
+         StoryEmotion = factor(StoryEmotion), 
+         FaceExpression = factor(FaceExpression))</code></pre>
+<p>To tidy the data, we create a new named object that has factorised the 4 columns which were previously of double and character data type (as shown in the above tibble).</p>
+</div>
+</div>
+<div id="creating-summary-statistics-1" class="section level2">
+<h2><strong>Creating summary statistics</strong></h2>
+<pre class="r"><code>Q2_tidied %&gt;%
+  group_by(StoryEmotion, FaceExpression) %&gt;%
+  summarise(Mean = mean(RT), SD = sd(RT))</code></pre>
+<pre><code>## # A tibble: 4 x 4
+## # Groups:   StoryEmotion [2]
+##   StoryEmotion FaceExpression  Mean    SD
+##   &lt;fct&gt;        &lt;fct&gt;          &lt;dbl&gt; &lt;dbl&gt;
+## 1 Anger        Anger          1848. 1079.
+## 2 Anger        Fear           2634. 2025.
+## 3 Fear         Anger          2525. 1867.
+## 4 Fear         Fear           2028. 1163.</code></pre>
+<p>Descriptive statistics, specifically the mean and standard deviation, are provided for the independent variables. We call the tidied dataset, use <code>group_by()</code> to organise the tibble by the two factors, and then use <code>summarise()</code> to obtain the <code>mean()</code> and <code>sd()</code> for the factors’ response time.</p>
+<p>Upon first impressions, we can see that response times are faster, on average, when the story emotion matches the face expression. Such that, the mean response time when the factors’ levels match equal 1848ms and 2028ms compared to 2634ms and 2525ms when they do not match.</p>
+</div>
+<div id="visualising-the-data-1" class="section level2">
+<h2><strong>Visualising the data</strong></h2>
+<p>The violin plot below highlights this distinction in response time more clearly.</p>
+<pre class="r"><code>Q2_tidied %&gt;% 
+  ggplot(aes(x = fct_reorder(StoryEmotion:FaceExpression, RT), y = RT, 
+             colour = StoryEmotion:FaceExpression)) +
+  geom_violin() +
+  geom_jitter(width = .1, alpha = 0.5, size = 2) +
+  stat_summary(fun.data = &quot;mean_cl_boot&quot;, colour = &quot;white&quot;, shape = &quot;diamond&quot;, 
+               fill = &quot;grey30&quot;, size = 1.5) +
+  scale_y_continuous(breaks = c(0, 2000, 4000, 6000, 8000)) +
+  guides(colour = FALSE) +
+  dark_theme_grey() +
+  theme(text = element_text(size = 20, family = &quot;Times&quot;, colour = &quot;grey&quot;),
+        plot.title = ggtext::element_textbox_simple(
+          color = &quot;grey&quot;,  fill = &quot;black&quot;, size = 28, width = .9,
+          padding = margin(8, 4, 8, 4), margin = margin(b = 0), lineheight = 1),
+        plot.subtitle = ggtext::element_textbox_simple(
+          color = &quot;grey&quot;, fill = &quot;black&quot;, size = 20, width = .9,
+          padding = margin(0, 4, 8, 4), margin = margin(b = 2), lineheight = 1),
+        axis.text.x = element_text(size = 18),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(angle = 45, hjust = 0.5, size = 18),
+        axis.ticks.y = element_blank(),
+        plot.caption = element_text(size = 14, hjust = 0),
+        plot.background = element_rect(fill = &quot;grey10&quot;),
+        panel.background = element_blank(),
+        panel.grid.major = element_line(color = &quot;grey30&quot;, size = 0.2),
+        panel.grid.minor = element_line(color = &quot;grey30&quot;, size = 0.2)) +
+  labs(x = &quot;Story Emotion:Face Expression&quot;, 
+       y = &quot;Response Time (ms)&quot;,
+       title = &quot;The Effect of Story Emotion and Facial Expression on Response Time&quot;,
+       subtitle = &quot;When story emotion and face expression match, response times are faster&quot;,
+       caption = &quot;Note: The diamond represents the mean and 95% bootstrapped confidence intervals&quot;) +
+  coord_flip() </code></pre>
+<p><img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-23-1.png" width="1344" /></p>
+<p>Using the tidied dataset, we call <code>ggplot()</code> and specify the x- and y-axis as well as the colour which is mapped onto the levels within each factor. Of note, we reorder the factors and their respective levels based on their response time using <code>fct_reorder()</code>. Doing so makes the distinction between matched conditions and unmatched conditions more clear. The <code>geom_violin()</code> and <code>geom_jitter()</code> are the chosen geometries to create the shape of the plot. We decrease the width of the data points, set the translucency with ‘alpha’, and change the size of the points.</p>
+<p>After this, we include the mean and the bootstrapped 95% confidence intervals for each level with <code>stat_summary()</code> and the ‘fun.data’ argument. We modify some of its aesthetics such as colour and shape. We change the x-axis continuous scale ‘breaks’ with <code>scale_y_continuous</code> to show more values to make reference to the plot easier. To note, we use <code>scale_y</code>, not <code>scale_x</code> since that was the original coordinates before they were flipped with <code>coord_flip()</code>.</p>
+<p>Similarly to before, the theme is developed, labels are provided for the axes and titles, and the coordinates are flipped. A difference here is that the <code>element_textbox_simple()</code> function has also been used for the subtitle. The code for the subtitle textbox is the same other than a change to the margin padding where there is no margin for the top text <code>margin(0, 4, 8, 4)</code>. This prevents there from being a gap between the title and subtitle textbox.</p>
+<p>These violin plots show that the matching levels (i.e., Anger:Anger &amp; Fear:Fear) have faster response times compared to the unmatched levels. The distribution shapes are also interesting since it seems that some participants in the unmatched condition took a significant amount of time (i.e., 7000ms+) to respond to the stimuli. This makes the unmatched conditions more positively skewed. Perhaps this suggests that unmatched conditions are more ambiguous and therefore lead to indecisiveness and slower response times. Although, rather than speculating, we will analyse these differences to know whether they are statistically significant differences.</p>
+</div>
+<div id="building-the-linear-mixed-effects-models-1" class="section level2">
+<h2><strong>Building the linear mixed effects models</strong></h2>
+<div id="contrasts-specific-for-factorial-design" class="section level3">
+<h3>Contrasts specific for factorial design</h3>
+<p>When building models for factorial designs, it is important to change R’s default dummy coding (known as treatment contrasts). By default, factors are coded as (0, 1) which would be difficult to interpret when we have two or more factors with their respective levels. Treatment coding can be seen below.</p>
+<pre class="r"><code>contrasts(Q2_tidied$StoryEmotion)</code></pre>
+<pre><code>##       Fear
+## Anger    0
+## Fear     1</code></pre>
+<pre class="r"><code>contrasts(Q2_tidied$FaceExpression)</code></pre>
+<pre><code>##       Fear
+## Anger    0
+## Fear     1</code></pre>
+<p>Therefore, instead of treatment contrasts, we will use sum contrasts because this compares each group against the average response across all conditions (i.e., the grand mean), rather than against a baseline condition. Such that, if a condition’s mean is the same as the grand mean, this also indicates that there is no difference between the two condition means. For more detail on contrasts, see <a href="https://www.sciencedirect.com/science/article/pii/S0749596X19300695">Schad et al. (2020)</a>.</p>
+<pre class="r"><code>contrasts(Q2_tidied$StoryEmotion) &lt;- matrix(c(.5, -.5))
+contrasts(Q2_tidied$FaceExpression) &lt;- matrix(c(.5, -.5))</code></pre>
+<p>In order to set up sum contrasts in R, we use <code>contrasts()</code> and include the factors within the dataset. Then, we modify the contrast matrix so that each level is rescaled to 0.5 and -0.5. These particular values are chosen to get an average of 0 for the contrast coefficients and a direct difference between the averages (i.e., scaled sum contrasts). This makes the estimated slopes the same as that of treatment coding because the main effects provide the average effect across factor levels.</p>
+<pre class="r"><code>contrasts(Q2_tidied$StoryEmotion)</code></pre>
+<pre><code>##       [,1]
+## Anger  0.5
+## Fear  -0.5</code></pre>
+<pre class="r"><code>contrasts(Q2_tidied$FaceExpression)</code></pre>
+<pre><code>##       [,1]
+## Anger  0.5
+## Fear  -0.5</code></pre>
+<p>Here, we can now see the contrast matrices now represents scaled sum contrasts.</p>
+</div>
+<div id="first-model-maximal-model-1" class="section level3">
+<h3>First model: Maximal model</h3>
+<p>As before, we start with the most complex model to see if it converges and fits.</p>
+<pre class="r"><code>Q2_model &lt;- lmer(RT ~ StoryEmotion * FaceExpression + 
+                          (1 + StoryEmotion * FaceExpression | Subject) +
+                          (1 + StoryEmotion * FaceExpression | Vignette), 
+                        data = Q2_tidied) </code></pre>
+<pre><code>## Warning in checkConv(attr(opt, &quot;derivs&quot;), opt$par, ctrl = control$checkConv, :
+## unable to evaluate scaled gradient</code></pre>
+<pre><code>## Warning in checkConv(attr(opt, &quot;derivs&quot;), opt$par, ctrl = control$checkConv, :
+## Model failed to converge: degenerate Hessian with 1 negative eigenvalues</code></pre>
+<pre><code>## Warning: Model failed to converge with 1 negative eigenvalue: -3.0e-03</code></pre>
+<p>The formula is similar to the previous linear mixed effects models. However, now that we have two factors, we are also interested in the interaction effects. Interaction effects are included with the asterisks. For example, <code>StoryEmotion * FaceExpression</code> refers to the fixed effect of StoryEmotion + FaceExpression <em>plus</em> the interaction effect of these two factors. Likewise, <code>(1 + StoryEmotion * FaceExpression | Subject)</code> refers to the random slopes of these factors <em>plus</em> the interaction effect for each subject.</p>
+<p>We see that this model does not converge so we should try simplify the random effects structure systematically.</p>
+</div>
+<div id="second-model-simplified-random-effects-structure-1" class="section level3">
+<h3>Second model: Simplified random effects structure</h3>
+<pre class="r"><code>Q2_model_fit &lt;- lmer(RT ~ StoryEmotion * FaceExpression + 
+                   (1 | Subject) + (1 | Vignette), data = Q2_tidied)</code></pre>
+<p>This model supports our data well with no warnings after removing the random slopes for both subject and vignette.</p>
+<pre class="r"><code>performance::check_model(Q2_model_fit)</code></pre>
+<p><img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-29-1.png" width="768" /></p>
+<p>All of the model assumptions seem fine other than the normality of residuals which seem to be non-linear at the tails, especially the right tail (approximately the top 25%). The Cullen and Grey plot used below may help us decide whether an alternative distribution fits the residual data better.</p>
+<pre class="r"><code>descdist(Q2_tidied$RT, boot = 500)</code></pre>
+<p><img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-30-1.png" width="672" /></p>
+<pre><code>## summary statistics
+## ------
+## min:  363   max:  9652 
+## median:  1706 
+## mean:  2238.018 
+## estimated sd:  1595.012 
+## estimated skewness:  2.409722 
+## estimated kurtosis:  9.931861</code></pre>
+<p>Here, the Cullen and Grey plot is produced with <code>descdist()</code> from <code>{fitdistrplus}</code>to display the response time data distribution. We see that the observation and bootstrapped values all reside within a beta distribution. However, since a beta distribution is used for data that is bounded between 0 and 1 (e.g., binomial data or proportions), it is inappropriate for us to transform the distribution in this case. It is not far from a gamma distribution so this model will be built after analysing the simplified random effects structured model.</p>
+<pre class="r"><code>summary(Q2_model_fit)</code></pre>
+<pre><code>## Linear mixed model fit by REML. t-tests use Satterthwaite&#39;s method [
+## lmerModLmerTest]
+## Formula: RT ~ StoryEmotion * FaceExpression + (1 | Subject) + (1 | Vignette)
+##    Data: Q2_tidied
+## 
+## REML criterion at convergence: 15371.1
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -2.8765 -0.4938 -0.1083  0.2439  6.2997 
+## 
+## Random effects:
+##  Groups   Name        Variance Std.Dev.
+##  Subject  (Intercept) 1361051  1166.6  
+##  Vignette (Intercept)   27627   166.2  
+##  Residual             1185670  1088.9  
+## Number of obs: 909, groups:  Subject, 32; Vignette, 32
+## 
+## Fixed effects:
+##                               Estimate Std. Error       df t value Pr(&gt;|t|)    
+## (Intercept)                    2289.70     211.50    32.01  10.826 3.12e-12 ***
+## StoryEmotion1                   -37.27      93.60    29.42  -0.398   0.6934    
+## FaceExpression1                -121.60      73.29   869.14  -1.659   0.0975 .  
+## StoryEmotion1:FaceExpression1 -1360.55     147.13   869.86  -9.248  &lt; 2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Correlation of Fixed Effects:
+##             (Intr) StryE1 FcExp1
+## StoryEmotn1 -0.005              
+## FacExprssn1  0.012 -0.065       
+## StryEm1:FE1 -0.015  0.053 -0.052</code></pre>
+<p>After simplifying the random effects structure, we look at the summary output for the fixed effects. The intercept refers to the grand mean of both factors after adjustment (i.e., 2297.74). The first coefficient refers to the mean difference between both levels within StoryEmotion (i.e., -54.01). The second coefficient refers to the mean difference between both levels within FaceExpression (i.e., -118.63). The interaction coefficient is the difference between [an angry and fearful story emotion with an angry face expression] minus [the difference between angry and fearful face expressions with fearful face expressions]. The values to work out the interaction coefficient are provided in the <code>emmeans()</code> contrasts section below (i.e., -748 - 640 = -1388).</p>
+<p>The interaction effect between StoryEmotion and FaceExpression is significant which indicates we should investigate this effect further with pairwise comparisons.</p>
+<pre class="r"><code>emmeans(Q2_model_fit, pairwise ~ StoryEmotion*FaceExpression, adjust = &quot;none&quot;)</code></pre>
+<pre><code>## $emmeans
+##  StoryEmotion FaceExpression emmean  SE   df lower.CL upper.CL
+##  Anger        Anger            1870 222 38.8     1421     2319
+##  Fear         Anger            2588 225 40.9     2133     3042
+##  Anger        Fear             2672 222 39.1     2222     3122
+##  Fear         Fear             2029 221 38.4     1581     2477
+## 
+## Degrees-of-freedom method: kenward-roger 
+## Confidence level used: 0.95 
+## 
+## $contrasts
+##  contrast                 estimate  SE    df t.ratio p.value
+##  Anger Anger - Fear Anger   -717.5 122  83.3 -5.875  &lt;.0001 
+##  Anger Anger - Anger Fear   -801.9 101 847.2 -7.928  &lt;.0001 
+##  Anger Anger - Fear Fear    -158.9 115  67.1 -1.380  0.1722 
+##  Fear Anger - Anger Fear     -84.3 123  84.7 -0.688  0.4936 
+##  Fear Anger - Fear Fear      558.7 107 874.4  5.233  &lt;.0001 
+##  Anger Fear - Fear Fear      643.0 116  69.2  5.542  &lt;.0001 
+## 
+## Degrees-of-freedom method: kenward-roger</code></pre>
+<p>We use <code>emmeans()</code> for pairwise comparisons and specify both factors as well as their interaction to get six comparisons. Only two of these six comparisons are theoretically meaningful. Such that, we are only interested in response time differences for face expressions in the different story emotion conditions. This means the <code>Anger Anger - Fear Anger</code> and <code>Anger Fear - Fear Fear</code> are the relevant comparisons. The first comparison compares angry facial expression response times in angry vs fearful stories and the second compares fearful facial expression response times in angry vs fearful stories. Both of these are statistically significant after manually correcting for multiple comparisons (see below).</p>
+<ul>
+<li><code>Anger Anger - Fear Anger</code>: <em>p</em> = 0.0001 x 2 = 0.0002</li>
+<li><code>Anger Fear - Fear Fear</code>: <em>p</em> = &lt;.0001 x 2 = &lt;.0002</li>
+</ul>
+<p>On average for the first comparison, angry facial expressions in angry stories are responded to 748ms faster than fearful facial expressions. For the second comparison, fearful facial expressions are responded to 640ms faster on average than angry facial expressions. This shows that when the facial expression matches the story emotion, response times are faster.</p>
+</div>
+<div id="third-and-final-model-gamma-generalised-linear-mixed-effects-model" class="section level3">
+<h3>Third and final model: Gamma generalised linear mixed effects model</h3>
+<p>As we saw with the Cullen &amp; Grey plot, the observation was set on a beta distribution but it was also not far from fitting a gamma distribution. This may reduce our normality of residuals issue. The gamma transformation is part of the generalised linear mixed effect model which allows us to change our dependent variable from a Gaussian distribution to a more appropriate one.</p>
+<pre class="r"><code>Q2_model_gamma &lt;- glmer(RT ~ StoryEmotion * FaceExpression + 
+                   (1 + FaceExpression + StoryEmotion | Subject) +
+                   (1 + FaceExpression + StoryEmotion | Vignette), 
+                 family = Gamma(link = &quot;identity&quot;), nAGQ = 0, data = Q2_tidied)</code></pre>
+<p>For the gamma model, we have fit the most complex model that is allowed (i.e., it converges and fits). This model has the fixed effects and the interaction for the factors, random slopes for both factors, and random intercepts for subject and vignette. Differently from the LMEM, we use the <code>glmer()</code> function, specify ‘Gamma’ from the ‘family’ argument, and set the nACQ value equal to 0. Changing the nACQ value to zero enables our model to converge at the expense of fewer parameter estimations. Importantly, the identity link is also specified for Gamma which assumes a linear relationship between the predictors and dependent variable <a href="https://www.frontiersin.org/articles/10.3389/fpsyg.2015.01171/full">(Lo &amp; Andrews, 2015)</a>. The identity link is also important for interpreting our results.</p>
+<pre class="r"><code>check_model(Q2_model_gamma)</code></pre>
+<p><img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-34-1.png" width="864" /></p>
+<p>The gamma transformation has helped fit the normality of residuals assumption better since the values are much closer to the line. All other assumptions also seem to abide well.</p>
+<pre class="r"><code>summary(Q2_model_gamma)</code></pre>
+<pre><code>## Generalized linear mixed model fit by maximum likelihood (Adaptive
+##   Gauss-Hermite Quadrature, nAGQ = 0) [glmerMod]
+##  Family: Gamma  ( identity )
+## Formula: 
+## RT ~ StoryEmotion * FaceExpression + (1 + FaceExpression + StoryEmotion |  
+##     Subject) + (1 + FaceExpression + StoryEmotion | Vignette)
+##    Data: Q2_tidied
+## 
+##      AIC      BIC   logLik deviance df.resid 
+##  14454.9  14536.7  -7210.4  14420.9      892 
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -1.6357 -0.5290 -0.1405  0.3953  6.7430 
+## 
+## Random effects:
+##  Groups   Name            Variance  Std.Dev. Corr       
+##  Subject  (Intercept)     4.194e+05 647.6143            
+##           FaceExpression1 1.360e+05 368.7208 -0.40      
+##           StoryEmotion1   6.688e+04 258.6213  0.26 -0.73
+##  Vignette (Intercept)     4.933e+02  22.2107            
+##           FaceExpression1 6.352e+04 252.0290  1.00      
+##           StoryEmotion1   7.679e+04 277.1051 -0.68 -0.68
+##  Residual                 1.464e-01   0.3826            
+## Number of obs: 909, groups:  Subject, 32; Vignette, 32
+## 
+## Fixed effects:
+##                               Estimate Std. Error t value Pr(&gt;|z|)    
+## (Intercept)                    2172.28     121.00  17.953  &lt; 2e-16 ***
+## StoryEmotion1                   -44.48      84.09  -0.529    0.597    
+## FaceExpression1                -131.55      95.08  -1.384    0.167    
+## StoryEmotion1:FaceExpression1  -714.39     127.94  -5.584 2.36e-08 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Correlation of Fixed Effects:
+##             (Intr) StryE1 FcExp1
+## StoryEmotn1  0.097              
+## FacExprssn1 -0.242 -0.577       
+## StryEm1:FE1 -0.136  0.098 -0.045</code></pre>
+<p>The interaction effect is still significant which is a good sign of a robust effect. With that being said, the estimated interaction coefficient is lower for this gamma model compared to the LMEM (i.e., -714 vs. -1388). We investigate this further with pairwise comparisons.</p>
+<pre class="r"><code>emmeans(Q2_model_gamma, pairwise ~ StoryEmotion*FaceExpression, 
+        adjust = &quot;none&quot;)</code></pre>
+<pre><code>## $emmeans
+##  StoryEmotion FaceExpression emmean  SE  df asymp.LCL asymp.UCL
+##  Anger        Anger            1906 121 Inf      1668      2143
+##  Fear         Anger            2307 140 Inf      2032      2582
+##  Anger        Fear             2394 163 Inf      2076      2713
+##  Fear         Fear             2082 134 Inf      1819      2345
+## 
+## Confidence level used: 0.95 
+## 
+## $contrasts
+##  contrast                 estimate    SE  df z.ratio p.value
+##  Anger Anger - Fear Anger   -401.7 110.5 Inf -3.634  0.0003 
+##  Anger Anger - Anger Fear   -488.7 112.2 Inf -4.357  &lt;.0001 
+##  Anger Anger - Fear Fear    -176.0  82.9 Inf -2.122  0.0338 
+##  Fear Anger - Anger Fear     -87.1 159.2 Inf -0.547  0.5844 
+##  Fear Anger - Fear Fear      225.6 117.0 Inf  1.929  0.0538 
+##  Anger Fear - Fear Fear      312.7 100.6 Inf  3.110  0.0019</code></pre>
+<p>Here, we find that the two comparisons of theoretical interest are still statistically significant (see below). As noted in the <code>summary()</code> output, the estimated coefficients for the relevant comparisons have reduced. Nonetheless, response times to face expressions are faster when the story emotion matches the face expression.</p>
+<ul>
+<li><code>Anger Anger - Fear Anger</code>: <em>p</em> = .0003 x 2 = .0006</li>
+<li><code>Anger Fear - Fear Fear</code>: <em>p</em> = .0019 x 2 = .0038</li>
+</ul>
+</div>
+<div id="likelihood-ratio-test-1" class="section level3">
+<h3>Likelihood ratio test</h3>
+<pre class="r"><code>anova(Q2_model_fit, Q2_model_gamma)</code></pre>
+<pre><code>## Data: Q2_tidied
+## Models:
+## Q2_model_fit: RT ~ StoryEmotion * FaceExpression + (1 | Subject) + (1 | Vignette)
+## Q2_model_gamma: RT ~ StoryEmotion * FaceExpression + (1 + FaceExpression + StoryEmotion | 
+## Q2_model_gamma:     Subject) + (1 + FaceExpression + StoryEmotion | Vignette)
+##                npar   AIC   BIC  logLik deviance  Chisq Df Pr(&gt;Chisq)    
+## Q2_model_fit      7 15431 15464 -7708.4    15417                         
+## Q2_model_gamma   17 14455 14537 -7210.4    14421 995.88 10  &lt; 2.2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<p>Here, we conduct the LRT to compare the two models since each is a subset of the other.</p>
+<p>Based on the <code>anova()</code> output, the gamma GLMM explains the greatest amount of variance indicated by the lower AIC, BIC, and deviance metrics at a statistically significant level. Therefore, the gamma model may be the best choice to interpret the findings of this experiment. With that being said, both models show the same pattern of results which suggests that the effect is strong.</p>
+</div>
+</div>
+</div>
+<div id="graphical-summary-of-each-experiment" class="section level1">
+<h1><strong>Graphical summary of each experiment</strong></h1>
+<p>To summarise the experimental datasets, a <code>{patchwork}</code> graph is included to showcase the plots. Before doing so, however, the <code>{ggtext}</code> specific code is removed because the title text boxes alter unexpectedly once they are combined with <code>{patchwork}</code>.</p>
+<pre class="r"><code>Q1_plot &lt;- Q1_tidied %&gt;% 
+  ggplot(aes(x = Response_Time, y = Context)) +
+  geom_density_ridges(scale = 2, rel_min_height = 0.001, fill = &quot;#7DCCFF&quot;,
+    colour = &quot;white&quot;, alpha = 0.5) +
+  stat_summary(fun.data = &quot;mean_cl_boot&quot;, colour = &quot;white&quot;, shape = &quot;diamond&quot;,
+               fill = &quot;grey30&quot;, size = 0.75) +
+  scale_x_continuous(name = &quot;Response Time (ms)&quot;, expand = c(0, 0),
+                     breaks  = c(0, 1000, 2000, 3000, 4000, 5000)) +
+  scale_y_discrete(expand = expansion(add = c(0.1, 2))) +
+  dark_theme_grey() +
+  theme(text = element_text(size = 20, family = &quot;Times&quot;, colour = &quot;grey&quot;),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(angle = 45, hjust = 0.5),
+        axis.ticks.y = element_blank(),
+        plot.caption = element_text(size = 12, hjust = 0),
+        plot.background = element_rect(fill = &quot;grey10&quot;),
+        panel.background = element_blank(),
+        panel.grid.major = element_line(color = &quot;grey30&quot;, size = 0.2),
+        panel.grid.minor = element_line(color = &quot;grey30&quot;, size = 0.2)) +
+  labs(title = &quot;The Influence of Context on Word Response Time&quot;,
+       caption = &quot;Note: The diamond represents the mean and 95% bootstrapped confidence intervals&quot;)
+
+Q2_plot &lt;- Q2_tidied %&gt;% 
+  ggplot(aes(x = fct_reorder(StoryEmotion:FaceExpression, RT), y = RT, 
+             colour = StoryEmotion:FaceExpression)) +
+  geom_violin() +
+  geom_jitter(width = .1, alpha = 0.5, size = 2) +
+  stat_summary(fun.data = &quot;mean_cl_boot&quot;, colour = &quot;white&quot;, shape = &quot;diamond&quot;, 
+               fill = &quot;grey30&quot;, size = 1.5) +
+  scale_y_continuous(breaks = c(0, 2000, 4000, 6000, 8000)) +
+  guides(colour = FALSE) +
+  dark_theme_grey() +
+  theme(text = element_text(size = 20, family = &quot;Times&quot;, colour = &quot;grey&quot;),
+        axis.text.x = element_text(size = 18),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(angle = 45, hjust = 0.5, size = 18),
+        axis.ticks.y = element_blank(),
+        plot.caption = element_text(size = 12, hjust = 0),
+        plot.background = element_rect(fill = &quot;grey10&quot;),
+        panel.background = element_blank(),
+        panel.grid.major = element_line(color = &quot;grey30&quot;, size = 0.2),
+        panel.grid.minor = element_line(color = &quot;grey30&quot;, size = 0.2)) +
+  labs(x = &quot;Story Emotion:Face Expression&quot;, 
+       y = &quot;Response Time (ms)&quot;,
+       title = &quot;The Effect of Story Emotion and Facial Expression on Response Time&quot;,
+       subtitle = &quot;When story emotion and face expression match, response times are faster&quot;,
+       caption = &quot;Note: The diamond represents the mean and 95% bootstrapped confidence intervals&quot;) +
+  coord_flip() </code></pre>
+<p>So, above we have removed the <code>{ggtext}</code> code and assigned each plot to a new object (i.e., Q1_plot &amp; Q2_plot).</p>
+<pre class="r"><code>Q12_plot &lt;- (Q1_plot / Q2_plot)
+
+combined_plot &lt;- Q12_plot + 
+  plot_annotation(title = &quot;Two plots which compare response times across experimental conditions&quot;,
+                  tag_levels = &#39;1&#39;) &amp;
+  theme(plot.title = element_text(size = 24, face = &quot;bold&quot;),
+        text = element_text(&quot;Times&quot;), plot.tag = element_text(size = 24))
+
+combined_plot</code></pre>
+<p><img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-39-1.png" width="1152" /></p>
+<p>For <code>{patchwork}</code>, a new object is created which combines the first and second plot. The addition sign indicates that we want the first plot and second plot next to each other. <code>plot_annotation()</code> is used to add a title and reference tag for the graph. The <code>theme()</code> is developed to change the text size and font. Altogether, this creates the combined plot from the experimental datasets we analysed.</p>
+</div>
+<div id="r-version-and-packages-used" class="section level1">
+<h1><strong>R Version and Packages Used </strong></h1>
+<p>The version of R and packages used for this project are displayed below.</p>
+<table class="table" style="width: auto !important; float: left; margin-right: 10px;">
+<caption>
+<span id="tab:unnamed-chunk-40">Table 1: </span>Session Info for R Environment
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;">
+Setting
+</th>
+<th style="text-align:left;">
+Value
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+version
+</td>
+<td style="text-align:left;">
+R version 4.0.3 (2020-10-10)
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+os
+</td>
+<td style="text-align:left;">
+macOS Big Sur 10.16
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+system
+</td>
+<td style="text-align:left;">
+x86_64, darwin17.0
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+ui
+</td>
+<td style="text-align:left;">
+X11
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+language
+</td>
+<td style="text-align:left;">
+(EN)
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+collate
+</td>
+<td style="text-align:left;">
+en_GB.UTF-8
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+ctype
+</td>
+<td style="text-align:left;">
+en_GB.UTF-8
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+tz
+</td>
+<td style="text-align:left;">
+Europe/London
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+date
+</td>
+<td style="text-align:left;">
+2021-04-02
+</td>
+</tr>
+</tbody>
+</table>
+<table class="table" style="width: auto !important; margin-right: 0; margin-left: auto">
+<caption>
+<span id="tab:unnamed-chunk-40">Table 1: </span>Session Info R Packages
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;">
+Package
+</th>
+<th style="text-align:left;">
+Loaded version
+</th>
+<th style="text-align:left;">
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+devtools
+</td>
+<td style="text-align:left;">
+2.3.2
+</td>
+<td style="text-align:left;">
+2020-09-18
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+dplyr
+</td>
+<td style="text-align:left;">
+1.0.4
+</td>
+<td style="text-align:left;">
+2021-02-02
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+emmeans
+</td>
+<td style="text-align:left;">
+1.5.4
+</td>
+<td style="text-align:left;">
+2021-02-03
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+fitdistrplus
+</td>
+<td style="text-align:left;">
+1.1-3
+</td>
+<td style="text-align:left;">
+2020-12-05
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+forcats
+</td>
+<td style="text-align:left;">
+0.5.1
+</td>
+<td style="text-align:left;">
+2021-01-27
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+ggdark
+</td>
+<td style="text-align:left;">
+0.2.1
+</td>
+<td style="text-align:left;">
+2019-01-11
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+ggplot2
+</td>
+<td style="text-align:left;">
+3.3.3
+</td>
+<td style="text-align:left;">
+2020-12-30
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+ggridges
+</td>
+<td style="text-align:left;">
+0.5.3
+</td>
+<td style="text-align:left;">
+2021-01-08
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+ggtext
+</td>
+<td style="text-align:left;">
+0.1.1
+</td>
+<td style="text-align:left;">
+2020-12-17
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+kableExtra
+</td>
+<td style="text-align:left;">
+1.3.4
+</td>
+<td style="text-align:left;">
+2021-02-20
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+knitr
+</td>
+<td style="text-align:left;">
+1.31
+</td>
+<td style="text-align:left;">
+2021-01-27
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+lme4
+</td>
+<td style="text-align:left;">
+1.1-26
+</td>
+<td style="text-align:left;">
+2020-12-01
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+lmerTest
+</td>
+<td style="text-align:left;">
+3.1-3
+</td>
+<td style="text-align:left;">
+2020-10-23
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+MASS
+</td>
+<td style="text-align:left;">
+7.3-53
+</td>
+<td style="text-align:left;">
+2020-09-09
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Matrix
+</td>
+<td style="text-align:left;">
+1.2-18
+</td>
+<td style="text-align:left;">
+2019-11-27
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+patchwork
+</td>
+<td style="text-align:left;">
+1.1.1
+</td>
+<td style="text-align:left;">
+2020-12-17
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+performance
+</td>
+<td style="text-align:left;">
+0.7.0
+</td>
+<td style="text-align:left;">
+2021-02-03
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+purrr
+</td>
+<td style="text-align:left;">
+0.3.4
+</td>
+<td style="text-align:left;">
+2020-04-17
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+readr
+</td>
+<td style="text-align:left;">
+1.4.0
+</td>
+<td style="text-align:left;">
+2020-10-05
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+stringr
+</td>
+<td style="text-align:left;">
+1.4.0
+</td>
+<td style="text-align:left;">
+2019-02-10
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+survival
+</td>
+<td style="text-align:left;">
+3.2-7
+</td>
+<td style="text-align:left;">
+2020-09-28
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+tibble
+</td>
+<td style="text-align:left;">
+3.0.6
+</td>
+<td style="text-align:left;">
+2021-01-29
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+tidyr
+</td>
+<td style="text-align:left;">
+1.1.2
+</td>
+<td style="text-align:left;">
+2020-08-27
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+tidyverse
+</td>
+<td style="text-align:left;">
+1.3.0
+</td>
+<td style="text-align:left;">
+2019-11-21
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+usethis
+</td>
+<td style="text-align:left;">
+2.0.1
+</td>
+<td style="text-align:left;">
+2021-02-10
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+visdat
+</td>
+<td style="text-align:left;">
+0.5.3
+</td>
+<td style="text-align:left;">
+2019-02-15
+</td>
+</tr>
+</tbody>
+</table>
+</div>

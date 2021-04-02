@@ -1,17 +1,19 @@
 ---
 title: 'The relationship between physical & social dominance'
 author: "Matthew Waddington"
-date: '2019-08-19'
+date: '2019-08-19T21:13:14-05:00'
 tags:
 - R Markdown
 - PCA
 - Bayesian Analysis
 categories: R
+image: 
+  caption: 'Image credit: [**IResearchNet**](http://psychology.iresearchnet.com/social-psychology/group/social-dominance-orientation/)'
 ---
 
-During a summer internship in 2019, I collected data for an experiment investigating the relationship between physical and social dominance under the topic of intrasexual competition. 
+During a summer internship in 2019, I collected data for an experiment investigating the relationship between physical and social dominance under the topic of intrasexual competition (i.e., same-sex competition). 
 
-This was the first RMarkdown I'd produced. It goes through the data analysis process to test this hypothesis.
+This was the first RMarkdown I'd produced. It goes through the data cleaning and analysis process to test this hypothesis.
 
 ## Loading packages
 
@@ -24,7 +26,7 @@ library(pacman)
 library(BayesFactor)
 ```
 
-Firstly, here is a quick overview of each package. `tidyverse` is used for `ggplot2` and reads in our data. The `psych` package is used for our correlation analyses and reliability testing. Both `lme4` and `lmerTest` produce the linear model. For principle compenetns analysis and Bayesian analysis, `pacman` and `BayesFactor` are needed, respectively. 
+Firstly, here is a quick overview of each package. `tidyverse` is used for `ggplot2` and reads in our data. The `psych` package is used for our correlation analyses and reliability testing. Both `lme4` and `lmerTest` produce the linear model. For principal component analysis and Bayesian analysis, `pacman` and `BayesFactor` are needed, respectively. 
 
 ## Importing data
 
@@ -122,7 +124,7 @@ summary(dom_lmodel)
 
 Since none of the variables are significant, we have no evidence to support the relationship.
 
-## Principle Components Analysis (PCA) 
+## Principal Components Analysis (PCA) 
 
 PCA is an unsupervised approach to classify data into clusters. We use it below for the dominance scale, social dominance measure and physical measures.
 
@@ -140,7 +142,7 @@ summary(SocDomPCA)
 
 To do the PCA, we firstly remove any NA values. In the `pacman` package, the `prcomp()` function creates the PCA and we centre and scale this so that the mean is equal to zero and the variance is based on SD units.
 
-The `summary()` shows us in the proportion of variance row that PC1 accounts for 40% of the variance in the data, PC2 accounts for 13%, PC3 10% and so on... Within this data, there are 10 principle components which explain almost all of the variance in our data. 
+The `summary()` shows us in the proportion of variance row that PC1 accounts for 40% of the variance in the data, PC2 accounts for 13%, PC3 10% and so on... Within this data, there are 10 principal components which explain almost all of the variance in our data. 
 
 We can plot this in a graph.
 
