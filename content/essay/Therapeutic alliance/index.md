@@ -4,7 +4,7 @@ diagram:
 image:
   caption: 'Image credit: [**NBC News**](https://www.nbcnews.com/better/lifestyle/how-break-your-therapist-learn-something-it-ncna980581)'
   placement: 3
-title: How can the way that psychological therapy is delivered by the therapist enhance the benefits for the patient?
+title: How is the patient-therapist relationship important for patient outcome?
 summary: The therapeutic alliance is an important component in the delivery of successful psychotherapy. This essay will discuss the evidence on how exactly this alliance is useful for patients.
 ---
 
